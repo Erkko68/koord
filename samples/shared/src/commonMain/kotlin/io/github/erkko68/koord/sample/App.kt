@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -17,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import io.github.erkko68.koord.ArConfig
 import io.github.erkko68.koord.ArException
 import io.github.erkko68.koord.ArSession
@@ -28,21 +28,23 @@ import io.github.erkko68.koord.DisplayRotation
  * the screen only shows what the session reports.
  *
  * The session is created by the platform entry point, since its constructor is
- * platform-specific.
+ * platform-specific. The camera permission must be granted before this is
+ * shown.
  */
 @Composable
 fun App(session: ArSession) {
     var status by remember { mutableStateOf("Starting…") }
     var tap by remember { mutableStateOf<Offset?>(null) }
 
-    DisposableEffect(session) {
+    // The session holds the camera, so it only runs while the app is in front.
+    LifecycleResumeEffect(session) {
         try {
             session.configure(ArConfig())
             session.resume()
         } catch (e: ArException) {
             status = "AR failed to start: ${e.message}"
         }
-        onDispose { session.pause() }
+        onPauseOrDispose { session.pause() }
     }
 
     LaunchedEffect(session) {

@@ -1,28 +1,48 @@
 # Koord
 
-Kotlin Multiplatform AR for Android and iOS, built on
-[filament-kmp](https://github.com/Erkko68/filament-kmp). ARCore on Android,
-ARKit on iOS, Filament for rendering on both.
+Augmented reality for Kotlin Multiplatform. Koord puts one Kotlin API over
+ARCore on Android and ARKit on iOS, so that tracking, planes, anchors and hit
+testing can be written once in common code. Rendering is meant to be done with
+[filament-kmp](https://github.com/Erkko68/filament-kmp), whose math types the
+API uses.
 
-> [!WARNING]
-> **Provisional.** The common API is declared but not implemented: every
-> platform `actual` is a `TODO()` stub, so the library and the samples compile
-> but throw `NotImplementedError` at runtime. See [docs/api.md](docs/api.md)
-> for the API and [docs/scope.md](docs/scope.md) for what it covers.
+```kotlin
+session.configure(ArConfig(planeDetection = PlaneDetection.HORIZONTAL))
+session.resume()
 
-## Layout
+// Once per rendered frame:
+val frame = session.update() ?: return
+if (frame.camera.trackingState == TrackingState.TRACKING) {
+    val anchor = frame.hitTest(tapX, tapY).firstOrNull()?.createAnchor()
+}
+```
 
-| Path | What |
-| :--- | :--- |
-| [koord](koord) | The library (`:koord`, `io.github.erkko68.koord:koord`) |
-| [build-logic](build-logic) | Convention plugins; `koord-kmp-module` sets targets, SDK levels and JVM target |
-| [samples](samples) | A separate Gradle build that consumes `koord` by its Maven coordinates |
-| [docs](docs) | The [API](docs/api.md), its [scope](docs/scope.md), and the [ARCore vs ARKit inventory](docs/platform-apis.md) it was designed from |
+## Status
 
-`samples/` works like a normal consumer of the library. Its
-[settings.gradle.kts](samples/settings.gradle.kts) includes the root build and
-substitutes `io.github.erkko68.koord:koord` with the local `:koord` project, so
-the samples always compile against the sources in this checkout.
+Koord is in early development and has not been published yet.
+
+| | Android (ARCore) | iOS (ARKit) |
+| :--- | :--- | :--- |
+| Session lifecycle and configuration | implemented | not yet |
+| Camera pose, matrices, intrinsics | implemented | not yet |
+| Plane detection | implemented | not yet |
+| Anchors | implemented | not yet |
+| Hit testing | implemented | not yet |
+| Light estimation | implemented | not yet |
+| Camera passthrough rendering | not yet | not yet |
+
+On iOS the API compiles but every call throws `NotImplementedError`. Without
+passthrough rendering, the sample app shows what the session reports as text
+rather than a camera view.
+
+## Documentation
+
+- [docs/api.md](docs/api.md): the API, its conventions, platform setup and a
+  first-use walkthrough
+- [docs/scope.md](docs/scope.md): what the API covers, what it leaves out, and
+  why
+- [docs/platform-apis.md](docs/platform-apis.md): the ARCore and ARKit features
+  side by side, which the API was designed from
 
 ## Requirements
 
@@ -32,7 +52,21 @@ the samples always compile against the sources in this checkout.
 
 AR needs real devices; the emulator and simulator won't do.
 
-## Running
+## Repository layout
+
+| Path | What |
+| :--- | :--- |
+| [koord](koord) | The library (`:koord`, `io.github.erkko68.koord:koord`) |
+| [build-logic](build-logic) | Convention plugins; `koord-kmp-module` sets targets, SDK levels and JVM target |
+| [samples](samples) | A separate Gradle build that consumes `koord` by its Maven coordinates |
+| [docs](docs) | API, scope and platform notes |
+
+`samples/` works like a normal consumer of the library. Its
+[settings.gradle.kts](samples/settings.gradle.kts) includes the root build and
+substitutes `io.github.erkko68.koord:koord` with the local `:koord` project, so
+the samples always compile against the sources in this checkout.
+
+## Building and running
 
 Library only, from the repo root:
 
@@ -48,6 +82,9 @@ Android:
 ```sh
 ./gradlew :androidApp:installDebug
 ```
+
+The sample asks for the camera permission, then shows the tracking state and
+the number of detected planes. Tap a detected surface to place an anchor.
 
 iOS: Gradle builds the Kotlin framework, Xcode builds and launches the app.
 Open [samples/iosApp/iosApp.xcodeproj](samples/iosApp/iosApp.xcodeproj), set

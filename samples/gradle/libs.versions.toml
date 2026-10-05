@@ -7,6 +7,7 @@ androidx-activity = "1.13.0"
 composeMultiplatform = "1.12.1"
 filament = "0.7.1"
 koord = "0.1.0-SNAPSHOT"
+lifecycle = "2.9.6"
 kotlin = "2.4.20"
 
 [libraries]
@@ -15,6 +16,7 @@ compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.re
 compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "composeMultiplatform" }
 compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMultiplatform" }
 filament-compose = { module = "io.github.erkko68.filament:filament-compose", version.ref = "filament" }
+lifecycle-runtime-compose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }
 koord = { module = "io.github.erkko68.koord:koord", version.ref = "koord" }
 
 [plugins]

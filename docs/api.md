@@ -5,10 +5,11 @@ describes that API. [scope.md](scope.md) lists what it covers and what it
 leaves out; [platform-apis.md](platform-apis.md) is the platform inventory it
 was designed from.
 
-> [!WARNING]
-> **Declared, not implemented.** The API below compiles on both platforms, but
-> every platform `actual` is a `TODO()` stub. Calling it throws
-> `NotImplementedError`. Camera passthrough rendering does not exist yet either.
+> [!NOTE]
+> **Android is implemented, iOS is not.** On Android the API runs on ARCore.
+> On iOS every `actual` is still a `TODO()` stub and throws
+> `NotImplementedError`. Neither platform draws the camera image yet: the API
+> tracks, but passthrough rendering does not exist.
 
 ## Types
 
@@ -40,9 +41,11 @@ counterparts.
   which `koord` exposes as an `api` dependency. Pass a `Mat4` to Filament with
   `toFloatArrayColumn()`.
 - **Screen points** are in viewport pixels, origin top-left.
-- **Frames are pulled.** Call `ArSession.update()` once per rendered frame, from
-  the render thread. It returns `null` until the first frame exists. A frame is
-  only valid until the next `update()`.
+- **Frames are pulled.** Call `ArSession.update()` once per rendered frame,
+  always from the same thread, which must also be the one that calls `close()`.
+  It returns `null` while the session is paused and until the first frame
+  exists. A frame is only valid until the next `update()`.
+- **`DisplayRotation`** has the meaning of Android's `Surface.ROTATION_*`.
 - **Live objects.** `Anchor` and `Plane` change as tracking improves; re-read
   their properties every frame instead of caching them.
 
@@ -58,6 +61,27 @@ Two things have no common declaration, because their arguments differ:
 Create the session in platform code and pass it to common code. The camera
 permission is also the app's job on both platforms: the Android runtime
 permission, and `NSCameraUsageDescription` on iOS.
+
+On Android the constructor never throws: the ARCore session is created on the
+first `resume()`, which is where a missing permission or a missing ARCore
+install is reported. `checkArAvailability(context)` answers `SUPPORTED` while
+ARCore is still checking with Google Play.
+
+## Android setup
+
+The app's manifest needs the camera permission and the ARCore marker, and the
+app must hold the runtime permission before calling `resume()`:
+
+```xml
+<uses-permission android:name="android.permission.CAMERA"/>
+<uses-feature android:name="android.hardware.camera.ar" android:required="true"/>
+
+<application>
+    <meta-data android:name="com.google.ar.core" android:value="required"/>
+</application>
+```
+
+`pause()` the session when the app leaves the foreground; it holds the camera.
 
 ## First use
 

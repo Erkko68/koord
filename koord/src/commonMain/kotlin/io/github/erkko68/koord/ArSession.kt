@@ -58,7 +58,8 @@ expect class ArSession {
      * one yet.
      *
      * The model is pull on both platforms: call this once per rendered frame,
-     * from the render thread. On Android it advances the session
+     * always from the same thread, which must also be the one that calls
+     * [close]. On Android it advances the session
      * (`Session.update()`); on iOS it returns the frame ARKit pushed last.
      *
      * @throws ArException if the session failed since the last call
@@ -87,5 +88,8 @@ expect class ArSession {
     val planes: List<Plane>
 }
 
-/** Rotation of the display relative to the device's natural orientation, clockwise. */
+/**
+ * Rotation of the display from the device's natural orientation, with the same
+ * meaning as Android's `Surface.ROTATION_*` constants.
+ */
 enum class DisplayRotation { ROTATION_0, ROTATION_90, ROTATION_180, ROTATION_270 }
