@@ -38,8 +38,9 @@ AR only runs on real devices, not on the emulator or the simulator. A green
 build does not show that AR code works: say plainly what was built and what
 was not run on a device.
 
-CI builds the library and the Android sample on Linux. It does not build the
-iOS targets, so build those locally when touching `iosMain` or common code.
+CI runs two jobs on every pull request: `android` (library and Android sample,
+on Linux) and `ios` (library and the Kotlin side of the iOS sample, on macOS).
+Neither runs the Xcode build of `samples/iosApp`.
 
 ## Code conventions
 
