@@ -34,7 +34,7 @@ kotlin {
             implementation(libs.compose.foundation)
             implementation(libs.compose.ui)
             implementation(libs.filament.compose)
-            implementation(libs.koord)
+            api(libs.koord)
         }
     }
 }

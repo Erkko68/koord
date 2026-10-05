@@ -9,6 +9,7 @@ kotlin = "2.4.20"
 [libraries]
 arcore = { module = "com.google.ar:core", version.ref = "arcore" }
 filament = { module = "io.github.erkko68.filament:filament", version.ref = "filament" }
+filament-utils = { module = "io.github.erkko68.filament:filament-utils", version.ref = "filament" }
 
 # build-logic
 android-gradlePlugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }

@@ -5,18 +5,19 @@ Kotlin Multiplatform AR for Android and iOS, built on
 ARKit on iOS, Filament for rendering on both.
 
 > [!WARNING]
-> **Provisional.** There is no library yet. The repo currently holds the setup
-> for one spike: camera passthrough behind a Filament scene. See
-> [docs/spike-camera-passthrough.md](docs/spike-camera-passthrough.md).
+> **Provisional.** The common API is declared but not implemented: every
+> platform `actual` is a `TODO()` stub, so the library and the samples compile
+> but throw `NotImplementedError` at runtime. See [docs/api.md](docs/api.md)
+> for the API and [docs/scope.md](docs/scope.md) for what it covers.
 
 ## Layout
 
 | Path | What |
 | :--- | :--- |
-| [koord](koord) | The library (`:koord`, `io.github.erkko68.koord:koord`) — the spike is developed here |
+| [koord](koord) | The library (`:koord`, `io.github.erkko68.koord:koord`) |
 | [build-logic](build-logic) | Convention plugins; `koord-kmp-module` sets targets, SDK levels and JVM target |
 | [samples](samples) | A separate Gradle build that consumes `koord` by its Maven coordinates |
-| [docs](docs) | Notes |
+| [docs](docs) | The [API](docs/api.md), its [scope](docs/scope.md), and the [ARCore vs ARKit inventory](docs/platform-apis.md) it was designed from |
 
 `samples/` works like a normal consumer of the library. Its
 [settings.gradle.kts](samples/settings.gradle.kts) includes the root build and
