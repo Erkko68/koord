@@ -10,6 +10,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             api(libs.filament)
+            api(libs.filament.utils)
         }
         androidMain.dependencies {
             implementation(libs.arcore)

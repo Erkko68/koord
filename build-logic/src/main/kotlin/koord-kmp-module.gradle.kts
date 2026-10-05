@@ -20,4 +20,9 @@ kotlin {
 
     iosArm64()
     iosSimulatorArm64()
+
+    compilerOptions {
+        // The common API is expect classes, which are still Beta.
+        freeCompilerArgs.add("-Xexpect-actual-classes")
+    }
 }
