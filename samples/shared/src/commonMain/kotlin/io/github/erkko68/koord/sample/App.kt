@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.IntSize
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import io.github.erkko68.filament.Engine
 import io.github.erkko68.filament.compose.FilamentEffect
@@ -50,9 +51,12 @@ private const val CUBE_SIZE = 0.1f
  * The session is created by the platform entry point, since its constructor is
  * platform-specific. The camera permission must be granted before this is
  * shown.
+ *
+ * @param displayRotation the current rotation of the screen, read every frame
  */
 @Composable
-fun App(session: ArSession) {
+fun App(session: ArSession, displayRotation: () -> DisplayRotation = { DisplayRotation.ROTATION_0 }) {
+    var size by remember { mutableStateOf(IntSize.Zero) }
     var status by remember { mutableStateOf("Starting…") }
     var tap by remember { mutableStateOf<Offset?>(null) }
     var cubes by remember { mutableStateOf(emptyList<Position>()) }
@@ -87,6 +91,9 @@ fun App(session: ArSession) {
             scene.addEntity(background.entity)
 
             onFrame {
+                // Every frame: turning the device upside down changes the rotation but not the size.
+                if (size != IntSize.Zero) session.setDisplayGeometry(displayRotation(), size.width, size.height)
+
                 val frame = try {
                     session.update()
                 } catch (e: ArException) {
@@ -132,8 +139,7 @@ fun App(session: ArSession) {
     Box(
         Modifier
             .fillMaxSize()
-            // ponytail: assumes portrait; pass the real display rotation to support landscape.
-            .onSizeChanged { session.setDisplayGeometry(DisplayRotation.ROTATION_0, it.width, it.height) }
+            .onSizeChanged { size = it }
             .pointerInput(Unit) { detectTapGestures { tap = it } },
     ) {
         FilamentView(scene, Modifier.fillMaxSize(), viewState = viewState)
