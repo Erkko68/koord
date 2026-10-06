@@ -1,6 +1,6 @@
 package io.github.erkko68.koord.light
 
-import io.github.erkko68.filament.utils.Float3
+import io.github.erkko68.koord.math.Float3
 
 /**
  * The session's estimate of the real scene's ambient light for one frame,

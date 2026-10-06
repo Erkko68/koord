@@ -1,8 +1,8 @@
 package io.github.erkko68.koord.camera
 
 import com.google.ar.core.Camera
-import io.github.erkko68.filament.utils.Float2
-import io.github.erkko68.filament.utils.Mat4
+import io.github.erkko68.koord.math.Float2
+import io.github.erkko68.koord.math.Mat4
 import io.github.erkko68.koord.TrackingFailureReason
 import io.github.erkko68.koord.TrackingState
 import io.github.erkko68.koord.toKoord
@@ -11,10 +11,10 @@ import io.github.erkko68.koord.toMat4
 actual class ArCamera internal constructor(private val camera: Camera) {
     actual val transform: Mat4 get() = camera.displayOrientedPose.toMat4()
 
-    actual val viewMatrix: Mat4 get() = FloatArray(16).also { camera.getViewMatrix(it, 0) }.toMat4()
+    actual val viewMatrix: Mat4 get() = Mat4(FloatArray(16).also { camera.getViewMatrix(it, 0) })
 
     actual fun projectionMatrix(near: Float, far: Float): Mat4 =
-        FloatArray(16).also { camera.getProjectionMatrix(it, 0, near, far) }.toMat4()
+        Mat4(FloatArray(16).also { camera.getProjectionMatrix(it, 0, near, far) })
 
     actual val intrinsics: CameraIntrinsics
         get() {

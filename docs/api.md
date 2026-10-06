@@ -7,12 +7,20 @@ was designed from.
 
 > [!NOTE]
 > **Both platforms are implemented.** On Android the API runs on ARCore, on
-> iOS on ARKit, including drawing the camera image on both. The iOS side is
+> iOS on ARKit, including drawing the camera image on both with
+> `koord-filament`. The iOS side is
 > new and not yet confirmed working on a device.
+
+## Modules
+
+| Module | What |
+| :--- | :--- |
+| `koord` | The AR API. It does not render and depends on no renderer. |
+| `koord-filament` | Rendering with [filament-kmp](https://github.com/Erkko68/filament-kmp): the engine for a session and the camera image as a renderable. It exposes `koord`, `filament` and `filament-utils` as `api` dependencies. |
 
 ## Types
 
-Everything lives under `io.github.erkko68.koord`.
+Everything in `koord` lives under `io.github.erkko68.koord`.
 
 | Type | Package | Kind | What it is |
 | :--- | :--- | :--- | :--- |
@@ -23,28 +31,38 @@ Everything lives under `io.github.erkko68.koord`.
 | `ArException` | root | sealed class | Platform failures. |
 | `ArAvailability` | root | enum | Whether the device can run AR. |
 | `DisplayRotation` | root | enum | Screen rotation, for `setDisplayGeometry`. |
-| `CameraBackground` | `camera` | `expect class` | Draws the camera image behind a Filament scene. |
 | `ArCamera`, `CameraIntrinsics` | `camera` | `expect class`, data class | Camera pose, matrices and intrinsics for a frame. |
 | `Anchor` | `trackable` | `expect class` | A world pose the session keeps correcting. |
 | `Plane` | `trackable` | `expect class` | A detected flat surface. |
 | `HitResult` | `hit` | `expect class` | One intersection of a hit-test ray with a plane. |
 | `HitTarget` | `hit` | enum | How much of a plane a hit test can hit: its polygon, or the plane extended without limit. |
 | `LightEstimate` | `light` | data class | Ambient light of the real scene. |
+| `Mat4`, `Float3`, `Float2`, `Ray` | `math` | classes | The values the API passes around. |
 
 The `expect` classes wrap a platform object; the rest is plain common code.
 Each declaration carries KDoc with the details and the ARCore and ARKit
 counterparts.
 
+`koord-filament` adds, under `io.github.erkko68.koord.filament`:
+
+| Declaration | Kind | What it is |
+| :--- | :--- | :--- |
+| `ArSession.createEngine()` | `expect fun` | The Filament engine that can draw the session's camera image. |
+| `CameraBackground` | `expect class` | Draws the camera image behind a Filament scene. |
+| `Mat4.toFilament()` | function | A Koord transform as `filament-utils`' `Mat4`. |
+
 ## Conventions
 
 - **World space** is right-handed, Y-up, in metres, on both platforms.
-- **Math types** come from `filament-utils` (`Mat4`, `Float3`, `Float2`, `Ray`),
-  which `koord` exposes as an `api` dependency. Pass a `Mat4` to Filament with
-  `toFloatArrayColumn()`.
+- **Math types** are Koord's own (`Mat4`, `Float3`, `Float2`, `Ray`) and only
+  carry values. A `Mat4` holds 16 values in column-major order:
+  `toFloatArray()` passes it to any renderer, `Mat4(values)` makes one. For
+  math on them, use the renderer's types; with `koord-filament`,
+  `toFilament()` gives `filament-utils`' `Mat4`.
 - **Screen points** are in viewport pixels, origin top-left.
 - **Frames are pulled.** Call `ArSession.update()` once per rendered frame,
-  always from the same thread, which must also be the one that calls
-  `createEngine()` and `close()`.
+  always from the same thread, which must also be the one that calls `close()`
+  and, with `koord-filament`, `createEngine()`.
   It returns `null` while the session is paused and until the first frame
   exists. A frame is only valid until the next `update()`.
 - **`DisplayRotation`** has the meaning of Android's `Surface.ROTATION_*`.
@@ -53,12 +71,17 @@ counterparts.
 
 ## What is platform-specific
 
-Two things have no common declaration, because their arguments differ:
+Three things have no common declaration, because their arguments or types
+differ:
 
 | | Android | iOS |
 | :--- | :--- | :--- |
 | Create a session | `ArSession(context)` | `ArSession()` |
 | Check availability | `checkArAvailability(context)` | `checkArAvailability()` |
+| Read the camera image | `ArSession.eglContext`, `ArSession.cameraTextureNames`, `ArFrame.cameraTextureName` | `ArFrame.cameraImage` |
+
+See [The camera image](#the-camera-image) for the last one; an app that uses
+`koord-filament` never touches it.
 
 Create the session in platform code and pass it to common code. The camera
 permission is also the app's job on both platforms: the Android runtime
@@ -117,8 +140,8 @@ session.resume()
 // Once per rendered frame:
 val frame = session.update() ?: return
 if (frame.camera.trackingState == TrackingState.TRACKING) {
-    // Drive the Filament camera.
-    filamentCamera.setModelMatrix(frame.camera.transform.toFloatArrayColumn())
+    // Drive the renderer's camera.
+    rendererCamera.setModelMatrix(frame.camera.transform.toFloatArray())
 
     // Place an anchor where the user tapped a detected plane.
     val anchor = frame.hitTest(tapX, tapY).firstOrNull()?.createAnchor()
@@ -129,16 +152,35 @@ session.pause()
 session.close()
 ```
 
-[samples/shared/…/App.kt](../samples/shared/src/commonMain/kotlin/io/github/erkko68/koord/sample/App.kt)
-is the same flow as a Compose screen.
+[samples/shared/…/ArSessionEffect.kt](../samples/shared/src/commonMain/kotlin/io/github/erkko68/koord/sample/ArSessionEffect.kt)
+is the same flow, run from a render loop.
+
+## The camera image
+
+`koord` hands the camera image out the way each platform delivers it, for a
+renderer to draw. There is no common type for it:
+
+- **Android:** ARCore writes the image to `GL_TEXTURE_EXTERNAL_OES` textures,
+  already RGB. `ArSession.cameraTextureNames` lists them,
+  `ArFrame.cameraTextureName` is the one a frame was written to, and
+  `ArSession.eglContext` is the GL context they live in, which the renderer
+  has to share.
+- **iOS:** `ArFrame.cameraImage` is ARKit's `CVPixelBufferRef`, full-range
+  BT.601 YCbCr in a luma and a chroma plane. It is only valid until the next
+  `update()`.
+
+What is common is where the viewport falls in that image:
+`ArFrame.cameraImageUv` gives the image's texture coordinates at three viewport
+corners (bottom-left, bottom-right, top-left), with the display rotation and
+the crop to the viewport's shape applied.
 
 ## Rendering with Filament
 
-Koord does not own the render loop; it gives Filament what it needs to draw an
-AR scene. Three pieces, all common code:
+Add `koord-filament`. Koord does not own the render loop; the module gives
+Filament what it needs to draw an AR scene. Three pieces, all common code:
 
 ```kotlin
-// 1. The engine must come from the session.
+// 1. The engine must be made for the session.
 val engine = session.createEngine()
 
 // 2. The camera image, as a renderable behind everything else.
@@ -148,9 +190,9 @@ scene.addEntity(background.entity)
 // 3. Once per rendered frame:
 val frame = session.update() ?: return
 background.update(frame)
-val projection = frame.camera.projectionMatrix(near, far).toFloatArrayColumn()
+val projection = frame.camera.projectionMatrix(near, far).toFloatArray()
 filamentCamera.setCustomProjection(DoubleArray(16) { projection[it].toDouble() }, near.toDouble(), far.toDouble())
-filamentCamera.setModelMatrix(frame.camera.transform.toFloatArrayColumn())
+filamentCamera.setModelMatrix(frame.camera.transform.toFloatArray())
 ```
 
 - **Use `session.createEngine()`, not `Engine.create()`.** ARCore writes the
@@ -164,8 +206,11 @@ filamentCamera.setModelMatrix(frame.camera.transform.toFloatArrayColumn())
   tone mapping, so it survives the view's post-processing roughly unchanged.
 
 The sample does this with `filament-compose`: an engine passed to
-`rememberFilamentScene`, a `FilamentEffect` for the per-frame work, and the
-view's camera reached through `rememberFilamentViewState`.
+`rememberFilamentScene`, a `FilamentEffect` for the per-frame work
+(`ArSessionEffect.kt`), and the view's camera reached through
+`rememberFilamentViewState`. `ArContent.kt` then draws from what the session
+reported: lights scaled and tinted by the `LightEstimate`, a mesh per `Plane`,
+and a cube per `Anchor`, placed with `Mat4.toFilament()`.
 
 ## Errors
 

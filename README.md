@@ -2,14 +2,15 @@
 
 Augmented reality for Kotlin Multiplatform. Koord puts one Kotlin API over
 ARCore on Android and ARKit on iOS, so that tracking, planes, anchors and hit
-testing can be written once in common code. Rendering is meant to be done with
-[filament-kmp](https://github.com/Erkko68/filament-kmp), whose math types the
-API uses.
+testing can be written once in common code. Koord itself does not render and
+depends on no renderer; the `koord-filament` module draws the camera image
+with [filament-kmp](https://github.com/Erkko68/filament-kmp).
 
 ```kotlin
 session.configure(ArConfig(planeDetection = PlaneDetection.HORIZONTAL))
 session.resume()
 
+// With koord-filament:
 val engine = session.createEngine()
 val background = CameraBackground(engine, session)   // the camera image, as a renderable
 scene.addEntity(background.entity)
@@ -34,7 +35,7 @@ Koord is in early development and has not been published yet.
 | Anchors | implemented | implemented |
 | Hit testing, inside a plane or on its extension | implemented | implemented |
 | Light estimation | implemented | implemented |
-| Camera image behind a Filament scene | implemented | implemented |
+| Camera image behind a Filament scene (`koord-filament`) | implemented | implemented |
 
 The iOS side is new and not yet confirmed working on a device.
 
@@ -62,22 +63,23 @@ AR needs real devices; the emulator and simulator won't do.
 | Path | What |
 | :--- | :--- |
 | [koord](koord) | The library (`:koord`, `io.github.erkko68.koord:koord`) |
+| [koord-filament](koord-filament) | Rendering with Filament (`:koord-filament`, `io.github.erkko68.koord:koord-filament`) |
 | [build-logic](build-logic) | Convention plugins; `koord-kmp-module` sets targets, SDK levels and JVM target |
-| [samples](samples) | A separate Gradle build that consumes `koord` by its Maven coordinates |
+| [samples](samples) | A separate Gradle build that consumes both by their Maven coordinates |
 | [docs](docs) | API, scope and platform notes |
 
 `samples/` works like a normal consumer of the library. Its
 [settings.gradle.kts](samples/settings.gradle.kts) includes the root build and
-substitutes `io.github.erkko68.koord:koord` with the local `:koord` project, so
-the samples always compile against the sources in this checkout.
+substitutes `io.github.erkko68.koord:koord` and `koord-filament` with the local
+projects, so the samples always compile against the sources in this checkout.
 
 ## Building and running
 
-Library only, from the repo root:
+Libraries only, from the repo root:
 
 ```sh
-./gradlew :koord:assemble
-./gradlew :koord:dokkaGenerate    # API reference, into koord/build/dokka/html
+./gradlew assemble
+./gradlew :dokkaGenerate    # API reference, into build/dokka/html
 ```
 
 The samples have their own Gradle wrapper. Run these from `samples/`, which
@@ -90,9 +92,16 @@ Android:
 ```
 
 The sample asks for the camera permission, then shows the camera with the
-tracking state on top. Detected surfaces are tinted blue; tap one to place a
-cube on it. A tap beside a detected surface places the cube on its extension,
-which is how a plain wall becomes usable from a small patch.
+tracking state on top. Detected surfaces are tinted, floors and tables blue
+and walls orange; tap one to stand a cube on it. A tap beside a detected
+surface places the cube on its extension, which is how a plain wall becomes
+usable from a small patch. The cubes are lit by the session's light estimate,
+and a button removes them.
+
+Its code, in [samples/shared](samples/shared/src/commonMain/kotlin/io/github/erkko68/koord/sample),
+is split by what it shows: `App.kt` is the screen, `ArSessionEffect.kt` is
+where Koord meets Filament each frame, `ArContent.kt` draws the lights, planes
+and cubes from the result, and `PlaneMesh.kt` turns a plane into triangles.
 
 iOS: Gradle builds the Kotlin framework, Xcode builds and launches the app.
 Open [samples/iosApp/iosApp.xcodeproj](samples/iosApp/iosApp.xcodeproj), pick

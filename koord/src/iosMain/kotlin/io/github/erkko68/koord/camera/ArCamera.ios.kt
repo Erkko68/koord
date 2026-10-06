@@ -2,9 +2,8 @@
 
 package io.github.erkko68.koord.camera
 
-import io.github.erkko68.filament.utils.Float2
-import io.github.erkko68.filament.utils.Mat4
-import io.github.erkko68.filament.utils.inverse
+import io.github.erkko68.koord.math.Float2
+import io.github.erkko68.koord.math.Mat4
 import io.github.erkko68.koord.TrackingFailureReason
 import io.github.erkko68.koord.TrackingState
 import io.github.erkko68.koord.toKoord
@@ -25,7 +24,7 @@ actual class ArCamera internal constructor(
     private val orientation: UIInterfaceOrientation,
     private val viewportSize: CValue<CGSize>,
 ) {
-    actual val transform: Mat4 get() = inverse(viewMatrix)
+    actual val transform: Mat4 get() = viewMatrix.inverseRigid()
 
     actual val viewMatrix: Mat4 get() = camera.viewMatrixForOrientation(orientation).toMat4()
 

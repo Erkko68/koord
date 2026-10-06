@@ -12,23 +12,22 @@ import android.opengl.GLES11Ext
 import android.opengl.GLES20
 import com.google.ar.core.Config
 import com.google.ar.core.Session
-import io.github.erkko68.filament.Engine
-import io.github.erkko68.filament.Filament
-import io.github.erkko68.filament.utils.Mat4
+import io.github.erkko68.koord.math.Mat4
 import io.github.erkko68.koord.trackable.Anchor
 import io.github.erkko68.koord.trackable.Plane
 import io.github.erkko68.koord.trackable.reportedPlanes
 
-// One being written by ARCore, plus the frames Filament's render thread may still have queued.
+// One being written by ARCore, plus the frames a renderer's own thread may still have queued.
 private const val CAMERA_TEXTURE_COUNT = 4
 
 /**
  * Backed by an ARCore `Session`, which is created on the first [resume] so
  * that the constructor never throws.
  *
- * [update], [createEngine] and [close] must always be called from the same
- * thread: ARCore writes the camera image to a GL texture, and the GL context
- * that owns it is bound to whichever of the first two is called first.
+ * [update], [eglContext], [cameraTextureNames] and [close] must always be
+ * called from the same thread: ARCore writes the camera image to a GL
+ * texture, and the GL context that owns it is bound to whichever of the first
+ * three is called first.
  */
 actual class ArSession(context: Context) {
     private val context = context.applicationContext
@@ -40,17 +39,37 @@ actual class ArSession(context: Context) {
 
     // The GL context that owns cameraTextures; eglSurface is only set when
     // ensureGl() had to create that context itself.
-    private var eglContext: EGLContext = EGL14.EGL_NO_CONTEXT
+    private var glContext: EGLContext = EGL14.EGL_NO_CONTEXT
     private var eglSurface: EGLSurface = EGL14.EGL_NO_SURFACE
 
+    // Empty before ensureGl().
+    private var cameraTextures = IntArray(0)
+
     /**
-     * GL names of the external textures ARCore writes the camera image to,
-     * empty before [ensureGl]. ARCore writes each frame to the next one in
-     * turn, so the texture of a frame Filament is still drawing on its own
-     * thread is not overwritten under it.
+     * The GL context ARCore writes the camera image in: the one current on
+     * the calling thread the first time the session needed it, or one the
+     * session created if there was none. A renderer has to share it to draw
+     * [cameraTextureNames]. Android only; iOS hands out the image itself,
+     * `ArFrame.cameraImage`.
      */
-    internal var cameraTextures = IntArray(0)
-        private set
+    val eglContext: EGLContext
+        get() {
+            ensureGl()
+            return glContext
+        }
+
+    /**
+     * GL names of the `GL_TEXTURE_EXTERNAL_OES` textures ARCore writes the
+     * camera image to, in [eglContext]. ARCore writes each frame to the next
+     * one in turn, so the texture of a frame a renderer is still drawing on
+     * its own thread is not overwritten under it; [ArFrame.cameraTextureName]
+     * is the one a frame was written to. Android only.
+     */
+    val cameraTextureNames: IntArray
+        get() {
+            ensureGl()
+            return cameraTextures.copyOf()
+        }
 
     actual fun configure(config: ArConfig) {
         this.config = config
@@ -87,10 +106,10 @@ actual class ArSession(context: Context) {
             val display = EGL14.eglGetDisplay(EGL14.EGL_DEFAULT_DISPLAY)
             EGL14.eglMakeCurrent(display, EGL14.EGL_NO_SURFACE, EGL14.EGL_NO_SURFACE, EGL14.EGL_NO_CONTEXT)
             EGL14.eglDestroySurface(display, eglSurface)
-            EGL14.eglDestroyContext(display, eglContext)
+            EGL14.eglDestroyContext(display, glContext)
             eglSurface = EGL14.EGL_NO_SURFACE
         }
-        eglContext = EGL14.EGL_NO_CONTEXT
+        glContext = EGL14.EGL_NO_CONTEXT
         cameraTextures = IntArray(0)
     }
 
@@ -106,21 +125,12 @@ actual class ArSession(context: Context) {
             ensureGl()
             session.setCameraTextureNames(cameraTextures)
             val frame = session.update()
-            // Filament samples the texture from its own context on another thread.
+            // A renderer samples the texture from its own context, on another thread.
             GLES20.glFlush()
             // Timestamp 0 means the camera has not delivered an image yet.
             return if (frame.timestamp == 0L) null else ArFrame(session, frame)
         } catch (e: Exception) {
             throw e.toArException()
-        }
-    }
-
-    actual fun createEngine(): Engine {
-        ensureGl()
-        Filament.init()
-        // ARCore's texture is an OpenGL one, so the engine cannot use Vulkan.
-        return checkNotNull(Engine.create(Engine.Backend.OPENGL, sharedContext = eglContext)) {
-            "Failed to create the Filament engine"
         }
     }
 
@@ -156,13 +166,12 @@ actual class ArSession(context: Context) {
      * ARCore writes the camera image to GL textures, and refuses to update
      * without one even when nothing draws it. This creates those textures, in
      * the GL context current on this thread or, when there is none, in a
-     * private 1×1 pbuffer context that is left current. [createEngine] shares
-     * the context with Filament so the textures can be drawn.
+     * private 1×1 pbuffer context that is left current.
      */
     private fun ensureGl() {
         if (cameraTextures.isNotEmpty()) return
-        eglContext = EGL14.eglGetCurrentContext()
-        if (eglContext == EGL14.EGL_NO_CONTEXT) {
+        glContext = EGL14.eglGetCurrentContext()
+        if (glContext == EGL14.EGL_NO_CONTEXT) {
             val display = EGL14.eglGetDisplay(EGL14.EGL_DEFAULT_DISPLAY)
             val version = IntArray(2)
             check(EGL14.eglInitialize(display, version, 0, version, 1)) { "eglInitialize failed" }
@@ -178,7 +187,7 @@ actual class ArSession(context: Context) {
                 0, configs, 0, 1, count, 0,
             )
             check(count[0] > 0) { "No EGL config for an offscreen GLES3 context" }
-            eglContext = EGL14.eglCreateContext(
+            glContext = EGL14.eglCreateContext(
                 display, configs[0], EGL14.EGL_NO_CONTEXT,
                 intArrayOf(EGL14.EGL_CONTEXT_CLIENT_VERSION, 3, EGL14.EGL_NONE), 0,
             )
@@ -186,7 +195,7 @@ actual class ArSession(context: Context) {
                 display, configs[0],
                 intArrayOf(EGL14.EGL_WIDTH, 1, EGL14.EGL_HEIGHT, 1, EGL14.EGL_NONE), 0,
             )
-            check(EGL14.eglMakeCurrent(display, eglSurface, eglSurface, eglContext)) { "eglMakeCurrent failed" }
+            check(EGL14.eglMakeCurrent(display, eglSurface, eglSurface, glContext)) { "eglMakeCurrent failed" }
         }
         val ids = IntArray(CAMERA_TEXTURE_COUNT)
         GLES20.glGenTextures(ids.size, ids, 0)

@@ -1,0 +1,38 @@
+language = Objective-C
+package = io.github.erkko68.koord.filament.interop
+---
+#import <CoreVideo/CoreVideo.h>
+#import <Metal/Metal.h>
+
+// In Objective-C because Kotlin/Native keeps an Objective-C object alive until
+// its garbage collector runs. A Metal texture made from the camera image holds
+// the image's memory, and ARKit stops delivering images once too many are
+// held. So Kotlin never sees the id<MTLTexture>: it gets a retained pointer,
+// which Filament takes over.
+//
+// cinterop compiles this with ARC.
+
+/** A cache that turns camera buffers into Metal textures without copying them. Release it with CFRelease. */
+static inline CVMetalTextureCacheRef koord_texture_cache_create(void) {
+    id<MTLDevice> device = MTLCreateSystemDefaultDevice();
+    CVMetalTextureCacheRef cache = NULL;
+    CVMetalTextureCacheCreate(kCFAllocatorDefault, NULL, device, NULL, &cache);
+    return cache;
+}
+
+/**
+ * One plane of a camera image (0: luma, 1: chroma) as a retained
+ * id<MTLTexture>, or NULL. Filament takes ownership of it on import.
+ * *holder keeps the texture's memory valid: release it with CFRelease once
+ * the GPU has finished drawing with the texture.
+ */
+static inline void* koord_image_plane_texture(CVPixelBufferRef image, CVMetalTextureCacheRef cache, size_t plane, CVMetalTextureRef* holder) {
+    *holder = NULL;
+    CVReturn status = CVMetalTextureCacheCreateTextureFromImage(
+        kCFAllocatorDefault, cache, image, NULL,
+        plane == 0 ? MTLPixelFormatR8Unorm : MTLPixelFormatRG8Unorm,
+        CVPixelBufferGetWidthOfPlane(image, plane), CVPixelBufferGetHeightOfPlane(image, plane),
+        plane, holder);
+    if (status != kCVReturnSuccess || *holder == NULL) return NULL;
+    return (void*)CFBridgingRetain(CVMetalTextureGetTexture(*holder));
+}

@@ -36,11 +36,11 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Generate the API docs
-        run: ./gradlew :koord:dokkaGenerate
+        run: ./gradlew :dokkaGenerate
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: koord/build/dokka/html
+          path: build/dokka/html
 
   deploy:
     if: github.event_name != 'pull_request'

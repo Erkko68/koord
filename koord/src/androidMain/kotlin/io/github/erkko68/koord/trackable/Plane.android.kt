@@ -1,7 +1,7 @@
 package io.github.erkko68.koord.trackable
 
-import io.github.erkko68.filament.utils.Float2
-import io.github.erkko68.filament.utils.Mat4
+import io.github.erkko68.koord.math.Float2
+import io.github.erkko68.koord.math.Mat4
 import io.github.erkko68.koord.TrackingState
 import io.github.erkko68.koord.toKoord
 import io.github.erkko68.koord.toMat4

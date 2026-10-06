@@ -41,7 +41,9 @@ import io.github.erkko68.koord.ArConfig
 import io.github.erkko68.koord.ArException
 import io.github.erkko68.koord.ArSession
 import io.github.erkko68.koord.DisplayRotation
-import io.github.erkko68.koord.camera.CameraBackground
+import io.github.erkko68.koord.filament.CameraBackground
+import io.github.erkko68.koord.filament.createEngine
+import io.github.erkko68.koord.filament.toFilament
 import io.github.erkko68.koord.hit.HitTarget
 import io.github.erkko68.koord.trackable.Plane
 
@@ -78,7 +80,7 @@ fun App(session: ArSession, displayRotation: () -> DisplayRotation = { DisplayRo
         onPauseOrDispose { session.pause() }
     }
 
-    // Only an engine from the session can draw its camera image. Declared
+    // Only an engine made for the session can draw its camera image. Declared
     // first so that it is destroyed last, after everything created from it.
     val engine = remember(session) { session.createEngine() }
     DisposableEffect(engine) {
@@ -111,9 +113,9 @@ fun App(session: ArSession, displayRotation: () -> DisplayRotation = { DisplayRo
 
                 // Look through the device's camera: its lens and its pose.
                 viewState.view?.camera?.let { camera ->
-                    val projection = frame.camera.projectionMatrix(NEAR, FAR).toFloatArrayColumn()
+                    val projection = frame.camera.projectionMatrix(NEAR, FAR).toFloatArray()
                     camera.setCustomProjection(DoubleArray(16) { projection[it].toDouble() }, NEAR.toDouble(), FAR.toDouble())
-                    camera.setModelMatrix(frame.camera.transform.toFloatArrayColumn())
+                    camera.setModelMatrix(frame.camera.transform.toFloatArray())
                 }
 
                 tap?.let {
@@ -213,7 +215,7 @@ private fun Plane.toMesh(): PlaneMesh? {
         indices[i * 3 + 1] = i + 1
         indices[i * 3 + 2] = (i + 1) % polygon.size + 1
     }
-    val transform = transform
+    val transform = transform.toFilament()
     return PlaneMesh(
         positions, normals, FloatArray(vertexCount * 2), indices,
         Position(transform.position), Rotation(transform.toQuaternion()),

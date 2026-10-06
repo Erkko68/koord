@@ -1,4 +1,4 @@
-package io.github.erkko68.koord.camera
+package io.github.erkko68.koord.filament
 
 import io.github.erkko68.filament.Engine
 import io.github.erkko68.koord.ArFrame
@@ -16,7 +16,7 @@ import io.github.erkko68.koord.ArSession
  * two planes of ARKit's YCbCr pixel buffer as Metal textures and converts them
  * to RGB.
  *
- * @param engine must come from [ArSession.createEngine] of the same [session];
+ * @param engine must come from [createEngine] of the same [session];
  *   an engine created any other way cannot see the camera image
  * @param session the session whose camera image is drawn
  */
@@ -26,7 +26,7 @@ expect class CameraBackground(engine: Engine, session: ArSession) {
     val entity: Int
 
     /**
-     * Fits the camera image of [frame] to the viewport set with
+     * Shows the camera image of [frame], fitted to the viewport set with
      * [ArSession.setDisplayGeometry]. Call it once for every frame returned by
      * [ArSession.update].
      */

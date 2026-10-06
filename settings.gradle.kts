@@ -31,3 +31,4 @@ dependencyResolutionManagement {
 }
 
 include(":koord")
+include(":koord-filament")

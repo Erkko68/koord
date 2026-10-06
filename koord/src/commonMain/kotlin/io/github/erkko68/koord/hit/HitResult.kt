@@ -1,6 +1,6 @@
 package io.github.erkko68.koord.hit
 
-import io.github.erkko68.filament.utils.Mat4
+import io.github.erkko68.koord.math.Mat4
 import io.github.erkko68.koord.trackable.Anchor
 import io.github.erkko68.koord.trackable.Plane
 

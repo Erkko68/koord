@@ -2,7 +2,7 @@
 
 package io.github.erkko68.koord
 
-import io.github.erkko68.filament.utils.Mat4
+import io.github.erkko68.koord.math.Mat4
 import kotlinx.cinterop.CValue
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.FloatVar
@@ -27,15 +27,17 @@ import platform.UIKit.UIInterfaceOrientationPortrait
 import platform.UIKit.UIInterfaceOrientationPortraitUpsideDown
 import platform.darwin.simd_float4x4
 
-// A simd_float4x4 is 16 floats in column-major order, the layout of Mat4.toFloatArrayColumn().
+// A simd_float4x4 is 16 floats in column-major order, the layout of Mat4.toFloatArray().
 
-internal fun CValue<simd_float4x4>.toMat4(): Mat4 = useContents {
-    val floats = ptr.reinterpret<FloatVar>()
-    FloatArray(16) { floats[it] }
-}.toMat4()
+internal fun CValue<simd_float4x4>.toMat4() = Mat4(
+    useContents {
+        val floats = ptr.reinterpret<FloatVar>()
+        FloatArray(16) { floats[it] }
+    },
+)
 
 internal fun Mat4.toSimd(): CValue<simd_float4x4> {
-    val values = toFloatArrayColumn()
+    val values = toFloatArray()
     return cValue {
         val floats = ptr.reinterpret<FloatVar>()
         for (i in 0 until 16) floats[i] = values[i]
