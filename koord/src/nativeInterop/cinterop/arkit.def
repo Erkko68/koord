@@ -41,10 +41,10 @@ static inline CGAffineTransform koord_frame_display_transform(void* frame, UIInt
     return [(__bridge ARFrame*)frame displayTransformForOrientation:orientation viewportSize:viewportSize];
 }
 
-/** A query against the geometry of detected planes, through a point in normalised camera image coordinates. */
-static inline ARRaycastQuery* koord_frame_raycast_query(void* frame, CGPoint imagePoint) {
+/** A query against detected planes, through a point in normalised camera image coordinates. */
+static inline ARRaycastQuery* koord_frame_raycast_query(void* frame, CGPoint imagePoint, ARRaycastTarget target) {
     return [(__bridge ARFrame*)frame raycastQueryFromPoint:imagePoint
-                                   allowingTarget:ARRaycastTargetExistingPlaneGeometry
+                                   allowingTarget:target
                                         alignment:ARRaycastTargetAlignmentAny];
 }
 

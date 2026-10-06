@@ -28,6 +28,7 @@ Everything lives under `io.github.erkko68.koord`.
 | `Anchor` | `trackable` | `expect class` | A world pose the session keeps correcting. |
 | `Plane` | `trackable` | `expect class` | A detected flat surface. |
 | `HitResult` | `hit` | `expect class` | One intersection of a hit-test ray with a plane. |
+| `HitTarget` | `hit` | enum | How much of a plane a hit test can hit: its polygon, or the plane extended without limit. |
 | `LightEstimate` | `light` | data class | Ambient light of the real scene. |
 
 The `expect` classes wrap a platform object; the rest is plain common code.
@@ -182,17 +183,23 @@ delegate, so on iOS a failure surfaces on the next `update()`.
 
 ## Behaviour that is deliberately the same on both platforms
 
-- **Hit tests only hit detected planes**, inside their polygon. Nothing can be
-  hit until plane detection has found a surface. `HitResult.plane` is therefore
+- **Hit tests only hit detected planes**: inside their polygon by default, or
+  anywhere on the extended plane with `HitTarget.PLANE_INFINITE`, which reaches
+  the rest of a wall of which only a patch was detected. Nothing can be hit
+  until plane detection has found a surface. `HitResult.plane` is therefore
   never null.
 - **`ArSession.planes` never contains merged-away planes.** When two planes turn
-  out to be one surface, only the survivor is listed.
+  out to be one surface, only the survivor is listed. On Android, a plane lying
+  within 10 cm of a larger parallel plane is left out too: ARCore reports such
+  layers where ARKit reports one plane.
 - **`LightEstimate.intensity` is normalised**: `1.0` is a neutrally lit scene on
   both platforms.
 
 ## Behaviour that still differs
 
 - `Plane.polygon` is convex on Android and may be concave on iOS.
+- On Android a hit test drops hits on the back of a plane, as ARCore's own
+  sample does. Whether ARKit reports such hits has not been checked.
 - `Anchor.trackingState` is per anchor on Android. ARKit does not track plain
   anchors individually, so on iOS it follows the camera's state.
 - Some `TrackingFailureReason` values are only reported by one platform; the
