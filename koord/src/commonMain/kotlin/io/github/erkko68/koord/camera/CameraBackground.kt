@@ -12,6 +12,9 @@ import io.github.erkko68.koord.ArSession
  * Add [entity] to the scene, call [update] with every new frame, and
  * [destroy] it before the engine. The view does not need to be transparent.
  *
+ * On Android it draws the external texture ARCore writes. On iOS it does not
+ * draw anything yet: [entity] is empty and the scene keeps its own background.
+ *
  * @param engine must come from [ArSession.createEngine] of the same [session];
  *   an engine created any other way cannot see the camera image
  * @param session the session whose camera image is drawn

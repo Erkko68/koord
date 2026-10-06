@@ -35,7 +35,10 @@ expect class Plane {
     /** Whether the surface is horizontal or vertical. */
     val alignment: Alignment
 
-    /** Whether the plane is currently being tracked. */
+    /**
+     * Whether the plane is currently being tracked. ARKit removes a plane it
+     * stops tracking, so on iOS this is never [TrackingState.LIMITED].
+     */
     val trackingState: TrackingState
 
     /** Orientation of a [Plane] relative to gravity. */
