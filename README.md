@@ -28,15 +28,18 @@ Koord is in early development and has not been published yet.
 
 | | Android (ARCore) | iOS (ARKit) |
 | :--- | :--- | :--- |
-| Session lifecycle and configuration | implemented | not yet |
-| Camera pose, matrices, intrinsics | implemented | not yet |
-| Plane detection | implemented | not yet |
-| Anchors | implemented | not yet |
-| Hit testing | implemented | not yet |
-| Light estimation | implemented | not yet |
+| Session lifecycle and configuration | implemented | implemented |
+| Camera pose, matrices, intrinsics | implemented | implemented |
+| Plane detection | implemented | implemented |
+| Anchors | implemented | implemented |
+| Hit testing | implemented | implemented |
+| Light estimation | implemented | implemented |
 | Camera image behind a Filament scene | implemented | not yet |
 
-On iOS the API compiles but every call throws `NotImplementedError`.
+The iOS side compiles but has not been run on a device yet. Its
+`CameraBackground` draws nothing: ARKit delivers the camera image as a
+`CVPixelBuffer`, and filament-kmp does not yet bind the Filament call that
+takes one (`Texture::setExternalImage`).
 
 ## Documentation
 
