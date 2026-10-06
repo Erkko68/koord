@@ -14,7 +14,7 @@ import com.google.ar.core.Plane as ArCorePlane
 // ARCore's own samples divide by.
 private const val MIDDLE_GRAY_GAMMA = 0.466f
 
-actual class ArFrame internal constructor(private val frame: Frame) {
+actual class ArFrame internal constructor(internal val frame: Frame) {
     actual val timestampNanos: Long get() = frame.timestamp
 
     actual val camera: ArCamera get() = ArCamera(frame.camera)

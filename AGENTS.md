@@ -60,6 +60,10 @@ Neither runs the Xcode build of `samples/iosApp`.
 - **Keep it small.** No abstractions, options or dependencies that nothing
   uses yet. Versions go in `gradle/libs.versions.toml` (and
   `samples/gradle/libs.versions.toml` for the samples).
+- **Materials** live as `.mat` sources in `koord/materials/` and are embedded
+  as generated Kotlin. After editing one, regenerate with
+  `koord/materials/embed.sh /path/to/matc`, using the `matc` of the Filament
+  release that filament-kmp bundles. Never edit the generated file.
 - **Keep the docs true.** An API change updates `docs/api.md`; a scope decision
   updates `docs/scope.md`.
 
