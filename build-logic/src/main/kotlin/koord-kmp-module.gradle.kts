@@ -3,6 +3,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     kotlin("multiplatform")
     id("com.android.kotlin.multiplatform.library")
+    id("org.jetbrains.dokka")
 }
 
 val libs = the<org.gradle.api.artifacts.VersionCatalogsExtension>().named("libs")

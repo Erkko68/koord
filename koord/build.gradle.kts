@@ -4,6 +4,17 @@ plugins {
     id("koord-kmp-module")
 }
 
+// API reference, published to GitHub Pages by .github/workflows/pages.yml: ./gradlew :koord:dokkaGenerate
+dokka {
+    dokkaSourceSets.configureEach {
+        sourceLink {
+            localDirectory = rootDir
+            remoteUrl("https://github.com/Erkko68/koord/tree/main")
+            remoteLineSuffix = "#L"
+        }
+    }
+}
+
 // The material compiler, run on the build machine by the generate…CameraBackgroundMaterial tasks.
 val filamat by configurations.creating {
     attributes {

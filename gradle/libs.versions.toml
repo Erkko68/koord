@@ -3,6 +3,7 @@ agp = "9.1.1"
 android-compileSdk = "37"
 android-minSdk = "24"
 arcore = "1.56.0"
+dokka = "2.2.0"
 filament = "0.7.2"
 kotlin = "2.4.20"
 
@@ -13,5 +14,6 @@ filament-utils = { module = "io.github.erkko68.filament:filament-utils", version
 
 # build-logic
 filamat-jvm = { module = "io.github.erkko68.filament:filamat-jvm", version.ref = "filament" }
+dokka-gradlePlugin = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
 android-gradlePlugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
 kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }

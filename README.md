@@ -32,7 +32,7 @@ Koord is in early development and has not been published yet.
 | Camera pose, matrices, intrinsics | implemented | implemented |
 | Plane detection | implemented | implemented |
 | Anchors | implemented | implemented |
-| Hit testing | implemented | implemented |
+| Hit testing, inside a plane or on its extension | implemented | implemented |
 | Light estimation | implemented | implemented |
 | Camera image behind a Filament scene | implemented | implemented |
 
@@ -40,6 +40,8 @@ The iOS side is new and not yet confirmed working on a device.
 
 ## Documentation
 
+- [API reference](https://erkko68.github.io/koord/): every public declaration,
+  generated from the KDoc on each push to `main`
 - [docs/api.md](docs/api.md): the API, its conventions, platform setup and a
   first-use walkthrough
 - [docs/scope.md](docs/scope.md): what the API covers, what it leaves out, and
@@ -75,6 +77,7 @@ Library only, from the repo root:
 
 ```sh
 ./gradlew :koord:assemble
+./gradlew :koord:dokkaGenerate    # API reference, into koord/build/dokka/html
 ```
 
 The samples have their own Gradle wrapper. Run these from `samples/`, which
@@ -88,12 +91,12 @@ Android:
 
 The sample asks for the camera permission, then shows the camera with the
 tracking state on top. Detected surfaces are tinted blue; tap one to place a
-cube on it.
+cube on it. A tap beside a detected surface places the cube on its extension,
+which is how a plain wall becomes usable from a small patch.
 
 iOS: Gradle builds the Kotlin framework, Xcode builds and launches the app.
-Open [samples/iosApp/iosApp.xcodeproj](samples/iosApp/iosApp.xcodeproj), set
-`TEAM_ID` in [Config.xcconfig](samples/iosApp/Configuration/Config.xcconfig),
-and run on a device. The Xcode build calls `./gradlew
+Open [samples/iosApp/iosApp.xcodeproj](samples/iosApp/iosApp.xcodeproj), pick
+your own team under Signing & Capabilities, and run on a device. The Xcode build calls `./gradlew
 :shared:embedAndSignAppleFrameworkForXcode` itself. To build from the command
 line:
 
