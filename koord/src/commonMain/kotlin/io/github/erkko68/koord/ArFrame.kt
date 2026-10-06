@@ -1,6 +1,6 @@
 package io.github.erkko68.koord
 
-import io.github.erkko68.filament.utils.Ray
+import io.github.erkko68.koord.math.Ray
 import io.github.erkko68.koord.camera.ArCamera
 import io.github.erkko68.koord.hit.HitResult
 import io.github.erkko68.koord.hit.HitTarget
@@ -33,6 +33,19 @@ expect class ArFrame {
      * estimate for this frame or [ArConfig.lightEstimation] is off.
      */
     val lightEstimate: LightEstimate?
+
+    /**
+     * Where the viewport set with [ArSession.setDisplayGeometry] falls in the
+     * camera image, which accounts for the display rotation and for the crop
+     * to the viewport's shape: the image's texture coordinates at three
+     * viewport corners, as `[u, v]` pairs, bottom-left, bottom-right, then
+     * top-left. ARCore's `Frame.transformCoordinates2d`, ARKit's
+     * `ARFrame.displayTransform`.
+     *
+     * The image itself has no common shape and is read per platform:
+     * `cameraTextureName` on Android, `cameraImage` on iOS.
+     */
+    val cameraImageUv: FloatArray
 
     /**
      * Casts a ray from a point on screen into the tracked world.

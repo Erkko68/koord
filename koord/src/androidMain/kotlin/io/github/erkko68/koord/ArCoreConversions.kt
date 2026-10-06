@@ -3,17 +3,16 @@ package io.github.erkko68.koord
 import com.google.ar.core.Pose
 import com.google.ar.core.exceptions.CameraNotAvailableException
 import com.google.ar.core.exceptions.UnavailableException
-import io.github.erkko68.filament.utils.Mat4
+import io.github.erkko68.koord.math.Mat4
 import com.google.ar.core.TrackingFailureReason as ArCoreFailureReason
 import com.google.ar.core.TrackingState as ArCoreTrackingState
 
-internal fun Pose.toMat4(): Mat4 = FloatArray(16).also { toMatrix(it, 0) }.toMat4()
+internal fun Pose.toMat4() = Mat4(FloatArray(16).also { toMatrix(it, 0) })
 
 /** [this] must be rigid; any scale would end up in the rotation. */
 internal fun Mat4.toPose(): Pose {
     val t = position
-    val q = toQuaternion()
-    return Pose(floatArrayOf(t.x, t.y, t.z), floatArrayOf(q.x, q.y, q.z, q.w))
+    return Pose(floatArrayOf(t.x, t.y, t.z), rotationQuaternion())
 }
 
 internal fun ArCoreTrackingState.toKoord() = when (this) {

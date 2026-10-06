@@ -1,7 +1,7 @@
 package io.github.erkko68.koord.camera
 
-import io.github.erkko68.filament.utils.Float2
-import io.github.erkko68.filament.utils.Mat4
+import io.github.erkko68.koord.math.Float2
+import io.github.erkko68.koord.math.Mat4
 import io.github.erkko68.koord.TrackingFailureReason
 import io.github.erkko68.koord.TrackingState
 
@@ -9,8 +9,8 @@ import io.github.erkko68.koord.TrackingState
  * The device camera at the time of one [io.github.erkko68.koord.ArFrame]:
  * ARCore's `Camera`, ARKit's `ARCamera`.
  *
- * Feeds Filament's `Camera` directly: [transform] goes to `setModelMatrix`,
- * [projectionMatrix] to `setCustomProjection`.
+ * Feeds a renderer's camera directly: [transform] is its model matrix,
+ * [projectionMatrix] its projection.
  */
 expect class ArCamera {
 

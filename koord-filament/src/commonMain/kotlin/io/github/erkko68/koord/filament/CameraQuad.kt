@@ -1,4 +1,4 @@
-package io.github.erkko68.koord.camera
+package io.github.erkko68.koord.filament
 
 import io.github.erkko68.filament.Engine
 import io.github.erkko68.filament.IndexBuffer

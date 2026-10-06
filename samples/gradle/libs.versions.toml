@@ -18,6 +18,7 @@ compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMul
 filament-compose = { module = "io.github.erkko68.filament:filament-compose", version.ref = "filament" }
 lifecycle-runtime-compose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }
 koord = { module = "io.github.erkko68.koord:koord", version.ref = "koord" }
+koord-filament = { module = "io.github.erkko68.koord:koord-filament", version.ref = "koord" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

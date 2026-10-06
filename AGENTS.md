@@ -5,8 +5,9 @@ Guidance for coding agents working in this repository.
 ## What this is
 
 Koord is a Kotlin Multiplatform AR library for Android and iOS: one common API
-over ARCore and ARKit, with [filament-kmp](https://github.com/Erkko68/filament-kmp)
-for rendering. It is early. Read these before changing the API:
+over ARCore and ARKit. The core does not render and depends on no renderer;
+`koord-filament` draws with [filament-kmp](https://github.com/Erkko68/filament-kmp).
+It is early. Read these before changing the API:
 
 - [docs/api.md](docs/api.md): the common API and its conventions
 - [docs/scope.md](docs/scope.md): what the API covers, what it leaves out, and why
@@ -16,17 +17,20 @@ for rendering. It is early. Read these before changing the API:
 
 | Path | What |
 | :--- | :--- |
-| `koord/` | The library. `commonMain` holds the API, `androidMain` the ARCore side, `iosMain` the ARKit side. |
+| `koord/` | The library. `commonMain` holds the API, `androidMain` the ARCore side, `iosMain` the ARKit side. No Filament. |
+| `koord-filament/` | The Filament integration: the engine for a session, `CameraBackground`, and the conversion to `filament-utils`. Depends on `koord`. |
 | `build-logic/` | Convention plugin `koord-kmp-module`: targets, SDK levels, compiler flags. |
-| `samples/` | A separate Gradle build with its own wrapper. It consumes `koord` by Maven coordinates, substituted with the local project. |
+| `samples/` | A separate Gradle build with its own wrapper. It consumes `koord` and `koord-filament` by Maven coordinates, substituted with the local projects. |
 | `docs/` | API, scope and platform notes. |
 
 ## Build and verify
 
-There are no tests yet. A change is verified by building:
+The only tests cover the math in `koord` (`koord/src/commonTest`), and run on
+the iOS simulator. Everything else is verified by building:
 
 ```sh
-./gradlew :koord:assemble                      # library, all targets
+./gradlew assemble                             # both libraries, all targets
+./gradlew :koord:iosSimulatorArm64Test         # the math tests (macOS only)
 cd samples
 ./gradlew :androidApp:assembleDebug            # Android sample
 ./gradlew :shared:compileKotlinIosArm64        # iOS side of the sample (macOS only)
@@ -40,12 +44,13 @@ AR only runs on real devices, not on the emulator or the simulator. A green
 build does not show that AR code works: say plainly what was built and what
 was not run on a device.
 
-CI runs two jobs on every pull request: `android` (library and Android sample,
-on Linux) and `ios` (library and the Kotlin side of the iOS sample, on macOS).
+CI runs two jobs on every pull request: `android` (libraries and Android
+sample, on Linux) and `ios` (libraries, tests and the Kotlin side of the iOS
+sample, on macOS).
 Neither runs the Xcode build of `samples/iosApp`.
 
 A third workflow, `Pages`, generates the API reference with Dokka
-(`./gradlew :koord:dokkaGenerate`) and publishes it to
+(`./gradlew :dokkaGenerate`, both modules) and publishes it to
 <https://erkko68.github.io/koord/> on every push to `main`.
 
 ## Code conventions
@@ -59,15 +64,20 @@ A third workflow, `Pages`, generates the API reference with Dokka
 - **Same behaviour on both platforms.** When the platforms disagree, pick one
   behaviour, implement it on both, and record the decision in `docs/scope.md`.
   Do not expose a feature only one platform has.
-- **Math types come from `filament-utils`** (`Mat4`, `Float3`, `Float2`, `Ray`).
-  Do not add new vector or matrix types.
+- **No renderer in `koord`.** It must not depend on Filament or any other
+  renderer; what is specific to one goes in its own module, as `koord-filament`.
+- **Math types are Koord's own** (`Mat4`, `Float3`, `Float2`, `Ray` in
+  `io.github.erkko68.koord.math`) and only carry values. Do not grow them into
+  a math library: public operations belong to the renderer's types, reached
+  through a conversion such as `Mat4.toFilament()`.
 - **World space** is right-handed, Y-up, in metres. Screen points are viewport
   pixels with the origin at the top-left.
 - **Keep it small.** No abstractions, options or dependencies that nothing
   uses yet. Versions go in `gradle/libs.versions.toml` (and
   `samples/gradle/libs.versions.toml` for the samples).
 - **Materials** are compiled at build time by a Gradle task in `build-logic/`
-  that runs filamat, and embedded as generated Kotlin under `koord/build/`.
+  that runs filamat, and embedded as generated Kotlin under
+  `koord-filament/build/`.
   The material is defined in that task
   (`GenerateCameraBackgroundMaterial.kt`), once per platform; nothing compiled
   is committed.
@@ -75,7 +85,8 @@ A third workflow, `Pages`, generates the API reference with Dokka
   objects alive until its garbage collector runs, and ARKit stops delivering
   camera images when too many frames are held. Read a frame through the
   helpers in `koord/src/nativeInterop/cinterop/arkit.def`, which take the
-  pointer `ArSession` retains for exactly one frame.
+  pointer `ArSession` retains for exactly one frame. The same goes for a Metal
+  texture made from the camera image: see `cameraImage.def` in `koord-filament`.
 - **Keep the docs true.** An API change updates `docs/api.md`; a scope decision
   updates `docs/scope.md`.
 

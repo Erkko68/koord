@@ -122,7 +122,7 @@ abstract class GenerateCameraBackgroundMaterial : DefaultTask() {
 
             val base64 = Base64.getEncoder().encodeToString(material.data)
             parameters.outputDir.get().file("CameraBackgroundMaterial.kt").asFile.writeText(
-                "package io.github.erkko68.koord.camera\n\n" +
+                "package io.github.erkko68.koord.filament\n\n" +
                     "internal const val CAMERA_BACKGROUND_FILAMAT_BASE64 =\n" +
                     base64.chunked(100).joinToString(" +\n") { "    \"$it\"" } + "\n",
             )

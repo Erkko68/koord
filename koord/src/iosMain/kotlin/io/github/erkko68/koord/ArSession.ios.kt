@@ -2,9 +2,7 @@
 
 package io.github.erkko68.koord
 
-import io.github.erkko68.filament.Engine
-import io.github.erkko68.filament.Filament
-import io.github.erkko68.filament.utils.Mat4
+import io.github.erkko68.koord.math.Mat4
 import io.github.erkko68.koord.trackable.Anchor
 import io.github.erkko68.koord.trackable.Plane
 import io.github.erkko68.koord.interop.koord_frame_anchors
@@ -107,11 +105,6 @@ actual class ArSession {
             frame = it
             ArFrame(this, it)
         }
-    }
-
-    actual fun createEngine(): Engine {
-        Filament.init()
-        return checkNotNull(Engine.create()) { "Failed to create the Filament engine" }
     }
 
     actual fun createAnchor(transform: Mat4): Anchor {

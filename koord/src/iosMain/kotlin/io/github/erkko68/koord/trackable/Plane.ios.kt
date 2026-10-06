@@ -2,9 +2,8 @@
 
 package io.github.erkko68.koord.trackable
 
-import io.github.erkko68.filament.utils.Float2
-import io.github.erkko68.filament.utils.Float4
-import io.github.erkko68.filament.utils.Mat4
+import io.github.erkko68.koord.math.Float2
+import io.github.erkko68.koord.math.Mat4
 import io.github.erkko68.koord.ArSession
 import io.github.erkko68.koord.TrackingState
 import io.github.erkko68.koord.toMat4
@@ -34,10 +33,12 @@ actual class Plane internal constructor(private val session: ArSession, private 
             val center = plane.center
             // Rotation about Y by the extent's angle, then translation to the centre.
             val centerFromAnchor = Mat4(
-                Float4(c, 0f, -s, 0f),
-                Float4(0f, 1f, 0f, 0f),
-                Float4(s, 0f, c, 0f),
-                Float4(center.getFloatAt(0), center.getFloatAt(1), center.getFloatAt(2), 1f),
+                floatArrayOf(
+                    c, 0f, -s, 0f,
+                    0f, 1f, 0f, 0f,
+                    s, 0f, c, 0f,
+                    center.getFloatAt(0), center.getFloatAt(1), center.getFloatAt(2), 1f,
+                ),
             )
             return plane.transform.toMat4() * centerFromAnchor
         }

@@ -4,7 +4,8 @@ What Koord takes from the two platforms, what it leaves out, and why. Feature
 names follow [platform-apis.md](platform-apis.md); the API itself is described
 in [api.md](api.md).
 
-Decided on 2026-10-05.
+Decided on 2026-10-05. The split of rendering into `koord-filament` was decided
+on 2026-10-06.
 
 ## In the API
 
@@ -20,7 +21,8 @@ Decided on 2026-10-05.
 | Planes | `Plane`, `ArSession.planes` | `Plane` | `ARPlaneAnchor` |
 | Hit testing | `ArFrame.hitTest` (screen point or `Ray`), `HitTarget`, `HitResult` | `Frame.hitTest` | `ARRaycastQuery`, `ARSession.raycast` |
 | Light estimate | `LightEstimate`: intensity, colour | `LightEstimate` pixel intensity, colour correction | `ARLightEstimate` ambient intensity, colour temperature |
-| Camera image | `ArSession.createEngine`, `CameraBackground` | external OES texture in a GL context shared with Filament | the two planes of `ARFrame.capturedImage` as Metal textures imported into Filament |
+| Camera image, raw | `ArFrame.cameraImageUv`, plus per platform: `ArSession.eglContext`, `ArSession.cameraTextureNames` and `ArFrame.cameraTextureName` on Android, `ArFrame.cameraImage` on iOS | external OES textures in a GL context, `Frame.transformCoordinates2d` | `ARFrame.capturedImage`, `ARFrame.displayTransform` |
+| Camera image, drawn (`koord-filament`) | `ArSession.createEngine`, `CameraBackground` | the OES texture, in a GL context shared with Filament | the two planes of the image as Metal textures imported into Filament |
 | Errors | `ArException` | exceptions | `session(_:didFailWithError:)` |
 | Availability | `ArAvailability`, platform `checkArAvailability` | `ArCoreApk.checkAvailability` | `ARConfiguration.isSupported` |
 
@@ -28,7 +30,9 @@ Decided on 2026-10-05.
 
 | Topic | Decision | Why |
 | :--- | :--- | :--- |
-| Transforms | `Mat4` from `filament-utils`, not a pose type | Filament consumes matrices; ARKit already uses them; ARCore's `Pose` converts with `toMatrix`. |
+| Transforms | A `Mat4`, not a pose type | Renderers consume matrices; ARKit already uses them; ARCore's `Pose` converts with `toMatrix`. |
+| Rendering | None in `koord`; Filament support is a separate module, `koord-filament` | An app that renders with something else should not pull in Filament. `filament-utils` depends on the whole engine, so even its math types could not stay. |
+| Math types | Koord's own `Mat4`, `Float3`, `Float2`, `Ray`, carrying values only | The price of not depending on a renderer. They have no public operations, so they do not compete with the renderer's types: `Mat4.toFloatArray()` goes to any renderer, `Mat4.toFilament()` to `filament-utils`. |
 | Frame delivery | Pull, on both | It matches a render loop. ARKit's pushed frames are cached and returned by `update()`. |
 | Session constructor and availability check | Platform-specific, no common declaration | Android needs a `Context`, iOS needs nothing. |
 | Errors | One sealed `ArException`; on iOS thrown from the next `update()` | ARCore throws, ARKit calls a delegate. Throwing gives common code one path. |
@@ -36,7 +40,7 @@ Decided on 2026-10-05.
 | Merged planes | Hidden from `ArSession.planes` | ARKit removes them; ARCore keeps them with `getSubsumedBy` set. |
 | Layered planes | On Android, a plane within 10 cm of a larger parallel plane that covers its centre is hidden from `ArSession.planes` and from hit tests | ARCore starts a plane on any flat patch and merges late, so one floor shows as stacked planes and low objects as planes of their own. ARKit holds these back. ARCore has no setting for it; filtering is what ARCore apps do. |
 | Light | Normalised intensity and an RGB tint only | These are the only values both platforms report during world tracking. |
-| Camera image | Koord draws it; the app does not get the texture | Android gives an OES texture tied to a GL context, iOS a YCbCr pixel buffer. A renderable hides both. The price is that the Filament engine must be created by the session. |
+| Camera image | Handed out per platform, with no common type; only where the viewport falls in it (`ArFrame.cameraImageUv`) is common | Android gives an OES texture tied to a GL context, iOS a YCbCr pixel buffer: there is no shape to share. `koord-filament`'s `CameraBackground` hides both behind a renderable; the price there is that the Filament engine must be created for the session. |
 | Installing ARCore | Reported as `ArAvailability.NEEDS_INSTALL`; the app triggers it | It needs an `Activity` and has no iOS counterpart. |
 
 ## Left out
@@ -46,7 +50,7 @@ Decided on 2026-10-05.
 | Feature | Why it waits |
 | :--- | :--- |
 | Depth and occlusion | Needs the camera image drawn on both platforms first. Also LiDAR-only on iOS. |
-| Raw camera image and image-to-screen transform | `CameraBackground` covers drawing it. Direct access to the pixels has no shared shape: an OES texture on Android, a YCbCr pixel buffer on iOS. |
+| The camera image's pixels on the CPU | The image is handed out as each platform delivers it, which on Android is a GL texture. Nothing needs to read it yet. |
 
 ### Common on both platforms, planned for later
 

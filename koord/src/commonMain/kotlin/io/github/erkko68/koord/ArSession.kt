@@ -1,7 +1,6 @@
 package io.github.erkko68.koord
 
-import io.github.erkko68.filament.Engine
-import io.github.erkko68.filament.utils.Mat4
+import io.github.erkko68.koord.math.Mat4
 import io.github.erkko68.koord.trackable.Anchor
 import io.github.erkko68.koord.trackable.Plane
 
@@ -13,9 +12,12 @@ import io.github.erkko68.koord.trackable.Plane
  * nothing), so there is no common constructor; create the session in platform
  * code and hand it to common code.
  *
- * World space is right-handed, Y-up and in metres on both platforms. Math
- * types come from `filament-utils`; a [Mat4] goes to Filament through
- * `toFloatArrayColumn()`.
+ * World space is right-handed, Y-up and in metres on both platforms. A [Mat4]
+ * goes to a renderer through [Mat4.toFloatArray].
+ *
+ * Koord does not draw. The camera image is handed out per platform, as the
+ * platform delivers it: see the platform members of this class and of
+ * [ArFrame]. `koord-filament` draws it with Filament.
  */
 expect class ArSession {
 
@@ -66,18 +68,6 @@ expect class ArSession {
      * @throws ArException if the session failed since the last call
      */
     fun update(): ArFrame?
-
-    /**
-     * Creates the Filament engine to render this session with. Only an engine
-     * created here can draw the camera image through
-     * [io.github.erkko68.koord.camera.CameraBackground]: on Android it uses
-     * the OpenGL backend and shares the GL context ARCore writes the image in.
-     * On iOS it is a Metal engine with nothing special about it.
-     *
-     * Call it from the thread that calls [update]. The caller owns the engine
-     * and destroys it with `Engine.destroy`.
-     */
-    fun createEngine(): Engine
 
     /**
      * Creates an anchor at a fixed pose in world space.

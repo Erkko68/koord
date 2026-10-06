@@ -1,9 +1,10 @@
 package io.github.erkko68.koord
 
+import com.google.ar.core.Coordinates2d
 import com.google.ar.core.Frame
 import com.google.ar.core.Session
-import io.github.erkko68.filament.utils.Float3
-import io.github.erkko68.filament.utils.Ray
+import io.github.erkko68.koord.math.Float3
+import io.github.erkko68.koord.math.Ray
 import io.github.erkko68.koord.camera.ArCamera
 import io.github.erkko68.koord.hit.HitResult
 import io.github.erkko68.koord.hit.HitTarget
@@ -17,8 +18,26 @@ import com.google.ar.core.Plane as ArCorePlane
 // ARCore's own samples divide by.
 private const val MIDDLE_GRAY_GAMMA = 0.466f
 
-actual class ArFrame internal constructor(private val session: Session, internal val frame: Frame) {
+// Three viewport corners: bottom-left, bottom-right, top-left.
+private val VIEWPORT_CORNERS = floatArrayOf(-1f, -1f, 1f, -1f, -1f, 1f)
+
+actual class ArFrame internal constructor(private val session: Session, private val frame: Frame) {
     actual val timestampNanos: Long get() = frame.timestamp
+
+    /**
+     * GL name of the texture this frame's camera image was written to, one of
+     * [ArSession.cameraTextureNames]. Drawing this one keeps the image in step
+     * with the frame's camera pose. Android only.
+     */
+    val cameraTextureName: Int get() = frame.cameraTextureName
+
+    actual val cameraImageUv: FloatArray
+        get() = FloatArray(6).also {
+            frame.transformCoordinates2d(
+                Coordinates2d.OPENGL_NORMALIZED_DEVICE_COORDINATES, VIEWPORT_CORNERS,
+                Coordinates2d.TEXTURE_NORMALIZED, it,
+            )
+        }
 
     actual val camera: ArCamera get() = ArCamera(frame.camera)
 

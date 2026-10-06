@@ -24,8 +24,8 @@ jobs:
       - name: Install the libraries filamat needs
         run: sudo apt-get update && sudo apt-get install -y libc++-dev libc++abi-dev libgl-dev
 
-      - name: Build the library
-        run: ./gradlew :koord:assemble
+      - name: Build the libraries
+        run: ./gradlew assemble
 
       - name: Build the Android sample
         working-directory: samples
@@ -41,8 +41,8 @@ jobs:
           java-version: 21
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Build the library
-        run: ./gradlew :koord:assemble
+      - name: Build the libraries and run the tests
+        run: ./gradlew assemble :koord:iosSimulatorArm64Test
 
       - name: Compile the iOS side of the sample
         working-directory: samples
