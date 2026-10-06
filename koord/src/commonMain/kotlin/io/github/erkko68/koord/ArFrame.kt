@@ -3,6 +3,7 @@ package io.github.erkko68.koord
 import io.github.erkko68.filament.utils.Ray
 import io.github.erkko68.koord.camera.ArCamera
 import io.github.erkko68.koord.hit.HitResult
+import io.github.erkko68.koord.hit.HitTarget
 import io.github.erkko68.koord.light.LightEstimate
 import io.github.erkko68.koord.trackable.Plane
 
@@ -13,10 +14,11 @@ import io.github.erkko68.koord.trackable.Plane
  * A frame is only meant to be used until the next [ArSession.update]; don't
  * hold on to it.
  *
- * Hit tests only report hits on detected planes, inside their [Plane.polygon]
- * boundary. ARKit's estimated planes and ARCore's instant placement, feature
- * point and depth hits are left out so both platforms answer the same way;
- * nothing can be hit until plane detection has found a surface.
+ * Hit tests only report hits on detected planes: inside their [Plane.polygon]
+ * boundary, or anywhere on them with [HitTarget.PLANE_INFINITE]. ARKit's
+ * estimated planes and ARCore's instant placement, feature point and depth
+ * hits are left out so both platforms answer the same way; nothing can be hit
+ * until plane detection has found a surface.
  */
 expect class ArFrame {
 
@@ -37,16 +39,18 @@ expect class ArFrame {
      *
      * @param xPx horizontal position in viewport pixels, origin top-left
      * @param yPx vertical position in viewport pixels, origin top-left
+     * @param target how much of each plane can be hit
      * @return hits sorted nearest first; empty if nothing was hit
      */
-    fun hitTest(xPx: Float, yPx: Float): List<HitResult>
+    fun hitTest(xPx: Float, yPx: Float, target: HitTarget = HitTarget.PLANE_POLYGON): List<HitResult>
 
     /**
      * Casts an arbitrary world-space ray into the tracked world.
      *
      * @param ray origin and direction in world space; the direction need not
      *   be normalised
+     * @param target how much of each plane can be hit
      * @return hits sorted nearest first; empty if nothing was hit
      */
-    fun hitTest(ray: Ray): List<HitResult>
+    fun hitTest(ray: Ray, target: HitTarget = HitTarget.PLANE_POLYGON): List<HitResult>
 }

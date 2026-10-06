@@ -18,7 +18,7 @@ Decided on 2026-10-05.
 | Tracking state | `TrackingState`, `TrackingFailureReason` | `TrackingState`, `TrackingFailureReason` | `trackingState`, `trackingStateReason` |
 | Anchors | `Anchor`, `ArSession.createAnchor`, `ArSession.anchors` | `Anchor` | `ARAnchor` |
 | Planes | `Plane`, `ArSession.planes` | `Plane` | `ARPlaneAnchor` |
-| Hit testing | `ArFrame.hitTest` (screen point or `Ray`), `HitResult` | `Frame.hitTest` | `ARRaycastQuery`, `ARSession.raycast` |
+| Hit testing | `ArFrame.hitTest` (screen point or `Ray`), `HitTarget`, `HitResult` | `Frame.hitTest` | `ARRaycastQuery`, `ARSession.raycast` |
 | Light estimate | `LightEstimate`: intensity, colour | `LightEstimate` pixel intensity, colour correction | `ARLightEstimate` ambient intensity, colour temperature |
 | Camera image | `ArSession.createEngine`, `CameraBackground` | external OES texture in a GL context shared with Filament | the two planes of `ARFrame.capturedImage` as Metal textures imported into Filament |
 | Errors | `ArException` | exceptions | `session(_:didFailWithError:)` |
@@ -32,8 +32,9 @@ Decided on 2026-10-05.
 | Frame delivery | Pull, on both | It matches a render loop. ARKit's pushed frames are cached and returned by `update()`. |
 | Session constructor and availability check | Platform-specific, no common declaration | Android needs a `Context`, iOS needs nothing. |
 | Errors | One sealed `ArException`; on iOS thrown from the next `update()` | ARCore throws, ARKit calls a delegate. Throwing gives common code one path. |
-| Hit targets | Detected planes only, inside their polygon | ARKit's estimated planes and ARCore's instant placement, point and depth hits have no counterpart on the other side. |
+| Hit targets | Detected planes only: inside their polygon, or extended without limit (`HitTarget`) | Both platforms hit a detected plane beyond its polygon natively (ARKit's `existingPlaneInfinite`, ARCore's unfiltered plane hits), and it is how a plain wall becomes usable from a small patch. ARKit's estimated planes and ARCore's instant placement, point and depth hits have no counterpart on the other side. |
 | Merged planes | Hidden from `ArSession.planes` | ARKit removes them; ARCore keeps them with `getSubsumedBy` set. |
+| Layered planes | On Android, a plane within 10 cm of a larger parallel plane that covers its centre is hidden from `ArSession.planes` and from hit tests | ARCore starts a plane on any flat patch and merges late, so one floor shows as stacked planes and low objects as planes of their own. ARKit holds these back. ARCore has no setting for it; filtering is what ARCore apps do. |
 | Light | Normalised intensity and an RGB tint only | These are the only values both platforms report during world tracking. |
 | Camera image | Koord draws it; the app does not get the texture | Android gives an OES texture tied to a GL context, iOS a YCbCr pixel buffer. A renderable hides both. The price is that the Filament engine must be created by the session. |
 | Installing ARCore | Reported as `ArAvailability.NEEDS_INSTALL`; the app triggers it | It needs an `Activity` and has no iOS counterpart. |

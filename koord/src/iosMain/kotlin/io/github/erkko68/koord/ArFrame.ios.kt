@@ -9,6 +9,7 @@ import io.github.erkko68.filament.utils.length
 import io.github.erkko68.filament.utils.normalize
 import io.github.erkko68.koord.camera.ArCamera
 import io.github.erkko68.koord.hit.HitResult
+import io.github.erkko68.koord.hit.HitTarget
 import io.github.erkko68.koord.interop.koord_frame_camera
 import io.github.erkko68.koord.interop.koord_frame_display_transform
 import io.github.erkko68.koord.interop.koord_frame_light_estimate
@@ -56,7 +57,7 @@ actual class ArFrame internal constructor(private val session: ArSession, privat
             )
         }
 
-    actual fun hitTest(xPx: Float, yPx: Float): List<HitResult> {
+    actual fun hitTest(xPx: Float, yPx: Float, target: HitTarget): List<HitResult> {
         // ARKit wants the point in the camera image, normalised; the display transform maps the image to the viewport.
         val viewportToImage = CGAffineTransformInvert(
             koord_frame_display_transform(handle, session.orientation, session.viewportSize()),
@@ -65,22 +66,27 @@ actual class ArFrame internal constructor(private val session: ArSession, privat
             CGPointMake((xPx / session.widthPx).toDouble(), (yPx / session.heightPx).toDouble()),
             viewportToImage,
         )
-        return raycast(koord_frame_raycast_query(handle, point) ?: return emptyList())
+        return raycast(koord_frame_raycast_query(handle, point, target.toArKit()) ?: return emptyList())
     }
 
-    actual fun hitTest(ray: Ray): List<HitResult> {
+    actual fun hitTest(ray: Ray, target: HitTarget): List<HitResult> {
         val direction = normalize(ray.direction)
         return raycast(
             ARRaycastQuery(
                 origin = vectorOf(ray.origin.x, ray.origin.y, ray.origin.z, 0f),
                 direction = vectorOf(direction.x, direction.y, direction.z, 0f),
-                allowingTarget = ARRaycastTarget.ARRaycastTargetExistingPlaneGeometry,
+                allowingTarget = target.toArKit(),
                 alignment = ARRaycastTargetAlignment.ARRaycastTargetAlignmentAny,
             ),
         )
     }
 
-    /** ARKit already sorts nearest first, and this target only reports hits inside a detected plane's geometry. */
+    private fun HitTarget.toArKit() = when (this) {
+        HitTarget.PLANE_POLYGON -> ARRaycastTarget.ARRaycastTargetExistingPlaneGeometry
+        HitTarget.PLANE_INFINITE -> ARRaycastTarget.ARRaycastTargetExistingPlaneInfinite
+    }
+
+    /** ARKit already sorts nearest first, and both targets only report hits on a detected plane. */
     private fun raycast(query: ARRaycastQuery): List<HitResult> {
         val origin = Float3(query.origin.getFloatAt(0), query.origin.getFloatAt(1), query.origin.getFloatAt(2))
         return session.session.raycast(query).mapNotNull { result ->

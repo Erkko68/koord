@@ -5,7 +5,44 @@ import io.github.erkko68.filament.utils.Mat4
 import io.github.erkko68.koord.TrackingState
 import io.github.erkko68.koord.toKoord
 import io.github.erkko68.koord.toMat4
+import com.google.ar.core.Pose
+import com.google.ar.core.Session
+import kotlin.math.abs
 import com.google.ar.core.Plane as ArCorePlane
+import com.google.ar.core.TrackingState as ArCoreTrackingState
+
+// How far apart, in metres along the normal, two overlapping parallel planes
+// can be and still count as one surface seen twice. Tune on a device: higher
+// hides more of ARCore's stacked duplicates, but also low real surfaces.
+private const val LAYER_DISTANCE = 0.1f
+
+// Cosine of the largest angle between the normals of two "parallel" planes.
+private const val LAYER_ALIGNMENT = 0.9f
+
+/**
+ * The planes Koord reports: tracked, not merged away, and not a layer of a
+ * larger one. ARCore starts a new plane on almost any flat patch (the top of
+ * an object, a rug, the same floor a few centimetres off) and only merges
+ * them later, if ever; ARKit holds such patches back. The hidden planes are
+ * still tracked by ARCore, so one that outgrows its neighbour comes back.
+ */
+internal fun Session.reportedPlanes(): List<ArCorePlane> {
+    val kept = mutableListOf<ArCorePlane>()
+    getAllTrackables(ArCorePlane::class.java)
+        .filter { it.subsumedBy == null && it.trackingState != ArCoreTrackingState.STOPPED }
+        .sortedByDescending { it.extentX * it.extentZ }
+        .forEach { plane -> if (kept.none { plane.isLayerOf(it) }) kept += plane }
+    return kept
+}
+
+// ponytail: only this plane's centre is tested against the larger polygon, so a layer that
+// overlaps from the side survives. Intersect the polygons if those show up.
+private fun ArCorePlane.isLayerOf(larger: ArCorePlane): Boolean {
+    val local = larger.centerPose.inverse().compose(centerPose)
+    return abs(local.ty()) < LAYER_DISTANCE &&
+        local.yAxis[1] > LAYER_ALIGNMENT &&
+        larger.isPoseInPolygon(larger.centerPose.compose(Pose.makeTranslation(local.tx(), 0f, local.tz())))
+}
 
 actual class Plane internal constructor(private val plane: ArCorePlane) {
     actual val transform: Mat4 get() = plane.centerPose.toMat4()
