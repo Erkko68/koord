@@ -7,7 +7,13 @@ import io.github.erkko68.filament.Filament
 import io.github.erkko68.filament.utils.Mat4
 import io.github.erkko68.koord.trackable.Anchor
 import io.github.erkko68.koord.trackable.Plane
+import io.github.erkko68.koord.interop.koord_frame_anchors
+import io.github.erkko68.koord.interop.koord_frame_camera
+import io.github.erkko68.koord.interop.koord_frame_retain_current
+import kotlinx.cinterop.COpaquePointer
 import kotlinx.cinterop.ExperimentalForeignApi
+import platform.CoreFoundation.CFRelease
+import platform.CoreGraphics.CGSizeMake
 import platform.ARKit.ARAnchor
 import platform.ARKit.ARPlaneAnchor
 import platform.ARKit.ARPlaneDetectionHorizontal
@@ -25,8 +31,12 @@ import platform.darwin.NSObject
  * Backed by an ARKit `ARSession` running an `ARWorldTrackingConfiguration`.
  *
  * ARKit pushes frames and reports failures through a delegate; [update]
- * returns the session's current frame and throws the failure it was told
+ * takes the session's current frame and throws the failure it was told
  * about since the last call.
+ *
+ * Exactly one `ARFrame` is held at a time, the one of the last [update], as a
+ * manually retained pointer: see `arkit.def` for why it is not a Kotlin
+ * reference.
  */
 actual class ArSession {
     internal val session = ARSession()
@@ -46,6 +56,9 @@ actual class ArSession {
         private set
 
     private val createdAnchors = mutableListOf<ARAnchor>()
+
+    // The ARFrame of the last update(), retained.
+    private var frame: COpaquePointer? = null
 
     init {
         session.delegate = delegate
@@ -67,6 +80,7 @@ actual class ArSession {
     actual fun pause() {
         running = false
         session.pause()
+        releaseFrame()
     }
 
     actual fun close() {
@@ -88,7 +102,11 @@ actual class ArSession {
             throw it.toArException()
         }
         if (!running) return null
-        return session.currentFrame?.let { ArFrame(this, it) }
+        releaseFrame()
+        return koord_frame_retain_current(session)?.let {
+            frame = it
+            ArFrame(this, it)
+        }
     }
 
     actual fun createEngine(): Engine {
@@ -107,7 +125,7 @@ actual class ArSession {
         get() = createdAnchors.map { Anchor(this, it) }
 
     actual val planes: List<Plane>
-        get() = session.currentFrame?.anchors?.filterIsInstance<ARPlaneAnchor>()?.map { Plane(this, it) }.orEmpty()
+        get() = frameAnchors().filterIsInstance<ARPlaneAnchor>().map { Plane(this, it) }
 
     /**
      * The session's current copy of [anchor], or `null` once it is gone.
@@ -118,7 +136,23 @@ actual class ArSession {
      * from the delegate's anchor callbacks, if scenes get many anchors.
      */
     internal fun current(anchor: ARAnchor): ARAnchor? =
-        session.currentFrame?.anchors?.firstOrNull { (it as ARAnchor).identifier == anchor.identifier } as ARAnchor?
+        frameAnchors().firstOrNull { (it as ARAnchor).identifier == anchor.identifier } as ARAnchor?
+
+    /** The camera's tracking state as of the last [update]. */
+    internal fun cameraTrackingState(): TrackingState =
+        frame?.let { koord_frame_camera(it) }?.trackingState?.toKoord() ?: TrackingState.STOPPED
+
+    internal fun isCurrent(frame: COpaquePointer) = frame == this.frame
+
+    // Only the aspect ratio matters to ARKit, so pixels do as well as points.
+    internal fun viewportSize() = CGSizeMake(widthPx.toDouble(), heightPx.toDouble())
+
+    private fun frameAnchors(): List<*> = frame?.let { koord_frame_anchors(it) }.orEmpty()
+
+    private fun releaseFrame() {
+        frame?.let { CFRelease(it) }
+        frame = null
+    }
 
     internal fun detach(anchor: ARAnchor) {
         session.removeAnchor(anchor)
