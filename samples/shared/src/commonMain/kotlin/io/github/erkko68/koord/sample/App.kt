@@ -33,20 +33,24 @@ import io.github.erkko68.filament.compose.scene.LinearColor
 import io.github.erkko68.filament.compose.scene.Position
 import io.github.erkko68.filament.compose.scene.SunLight
 import io.github.erkko68.filament.compose.scene.primitives.Cube
+import io.github.erkko68.filament.compose.scene.primitives.Mesh
 import io.github.erkko68.filament.compose.scene.rememberColorMaterialInstance
+import io.github.erkko68.filament.compose.scene.rememberTransparentColorMaterialInstance
+import io.github.erkko68.filament.utils.Float4
 import io.github.erkko68.koord.ArConfig
 import io.github.erkko68.koord.ArException
 import io.github.erkko68.koord.ArSession
 import io.github.erkko68.koord.DisplayRotation
 import io.github.erkko68.koord.camera.CameraBackground
+import io.github.erkko68.koord.trackable.Plane
 
 private const val NEAR = 0.05f
 private const val FAR = 100f
 private const val CUBE_SIZE = 0.1f
 
 /**
- * First use of Koord with Filament: the camera image fills the screen, and
- * tapping a detected surface places a cube there.
+ * First use of Koord with Filament: the camera image fills the screen,
+ * detected surfaces are tinted, and tapping one places a cube there.
  *
  * The session is created by the platform entry point, since its constructor is
  * platform-specific. The camera permission must be granted before this is
@@ -60,6 +64,7 @@ fun App(session: ArSession, displayRotation: () -> DisplayRotation = { DisplayRo
     var status by remember { mutableStateOf("Starting…") }
     var tap by remember { mutableStateOf<Offset?>(null) }
     var cubes by remember { mutableStateOf(emptyList<Position>()) }
+    var planes by remember { mutableStateOf(emptyList<PlaneMesh>()) }
 
     // The session holds the camera, so it only runs while the app is in front.
     LifecycleResumeEffect(session) {
@@ -120,13 +125,30 @@ fun App(session: ArSession, displayRotation: () -> DisplayRotation = { DisplayRo
                     val p = anchor.transform.position
                     Position(p.x, p.y + CUBE_SIZE / 2, p.z)
                 }
+                // Planes grow and move as more of the surface is seen.
+                planes = session.planes.mapNotNull { it.toMesh() }
                 status = "${frame.camera.trackingState} · " +
-                    "${session.planes.size} planes · ${cubes.size} anchors"
+                    "${planes.size} planes · ${cubes.size} anchors"
             }
 
             onDispose {
                 scene.remove(background.entity)
                 background.destroy()
+            }
+        }
+
+        val tint = rememberTransparentColorMaterialInstance(LinearColor(0.2f, 0.6f, 1f), alpha = 0.3f)
+        planes.forEachIndexed { index, plane ->
+            key(index) {
+                Mesh(
+                    material = tint,
+                    positions = plane.positions,
+                    normals = plane.normals,
+                    uvs = plane.uvs,
+                    indices = plane.indices,
+                    castShadows = false,
+                    receiveShadows = false,
+                )
             }
         }
 
@@ -149,4 +171,30 @@ fun App(session: ArSession, displayRotation: () -> DisplayRotation = { DisplayRo
             style = TextStyle(color = Color.White),
         )
     }
+}
+
+/** The boundary of a detected plane as triangles in world space. */
+private class PlaneMesh(val positions: FloatArray, val normals: FloatArray, val uvs: FloatArray, val indices: IntArray)
+
+private fun Plane.toMesh(): PlaneMesh? {
+    val polygon = polygon
+    if (polygon.size < 3) return null
+    val transform = transform
+    val normal = transform.y
+    val positions = FloatArray(polygon.size * 3)
+    val normals = FloatArray(polygon.size * 3)
+    polygon.forEachIndexed { i, vertex ->
+        // The polygon lies in the plane's local XZ plane.
+        val p = transform * Float4(vertex.x, 0f, vertex.y, 1f)
+        positions[i * 3] = p.x
+        positions[i * 3 + 1] = p.y
+        positions[i * 3 + 2] = p.z
+        normals[i * 3] = normal.x
+        normals[i * 3 + 1] = normal.y
+        normals[i * 3 + 2] = normal.z
+    }
+    // ponytail: a fan from the first vertex, exact only for convex polygons. ARKit's can be
+    // concave; triangulate by ear clipping if the tint spills outside a boundary.
+    val indices = IntArray((polygon.size - 2) * 3) { if (it % 3 == 0) 0 else it / 3 + it % 3 }
+    return PlaneMesh(positions, normals, FloatArray(polygon.size * 2), indices)
 }

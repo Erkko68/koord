@@ -87,7 +87,8 @@ Android:
 ```
 
 The sample asks for the camera permission, then shows the camera with the
-tracking state on top. Tap a detected surface to place a cube on it.
+tracking state on top. Detected surfaces are tinted blue; tap one to place a
+cube on it.
 
 iOS: Gradle builds the Kotlin framework, Xcode builds and launches the app.
 Open [samples/iosApp/iosApp.xcodeproj](samples/iosApp/iosApp.xcodeproj), set
