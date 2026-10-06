@@ -44,6 +44,10 @@ CI runs two jobs on every pull request: `android` (library and Android sample,
 on Linux) and `ios` (library and the Kotlin side of the iOS sample, on macOS).
 Neither runs the Xcode build of `samples/iosApp`.
 
+A third workflow, `Pages`, generates the API reference with Dokka
+(`./gradlew :koord:dokkaGenerate`) and publishes it to
+<https://erkko68.github.io/koord/> on every push to `main`.
+
 ## Code conventions
 
 - **Common API first.** Public API is declared in `commonMain`, as an `expect`
