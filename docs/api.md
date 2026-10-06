@@ -6,10 +6,9 @@ leaves out; [platform-apis.md](platform-apis.md) is the platform inventory it
 was designed from.
 
 > [!NOTE]
-> **Both platforms are implemented, with one gap.** On Android the API runs on
-> ARCore, including drawing the camera image. On iOS it runs on ARKit, but
-> `CameraBackground` does not draw the camera image yet. The iOS side compiles
-> and has not been run on a device.
+> **Both platforms are implemented.** On Android the API runs on ARCore, on
+> iOS on ARKit, including drawing the camera image on both. The iOS side is
+> new and not yet confirmed working on a device.
 
 ## Types
 

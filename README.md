@@ -34,12 +34,9 @@ Koord is in early development and has not been published yet.
 | Anchors | implemented | implemented |
 | Hit testing | implemented | implemented |
 | Light estimation | implemented | implemented |
-| Camera image behind a Filament scene | implemented | not yet |
+| Camera image behind a Filament scene | implemented | implemented |
 
-The iOS side compiles but has not been run on a device yet. Its
-`CameraBackground` draws nothing: ARKit delivers the camera image as a
-`CVPixelBuffer`, and filament-kmp does not yet bind the Filament call that
-takes one (`Texture::setExternalImage`).
+The iOS side is new and not yet confirmed working on a device.
 
 ## Documentation
 

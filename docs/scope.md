@@ -20,7 +20,7 @@ Decided on 2026-10-05.
 | Planes | `Plane`, `ArSession.planes` | `Plane` | `ARPlaneAnchor` |
 | Hit testing | `ArFrame.hitTest` (screen point or `Ray`), `HitResult` | `Frame.hitTest` | `ARRaycastQuery`, `ARSession.raycast` |
 | Light estimate | `LightEstimate`: intensity, colour | `LightEstimate` pixel intensity, colour correction | `ARLightEstimate` ambient intensity, colour temperature |
-| Camera image | `ArSession.createEngine`, `CameraBackground` | external OES texture in a GL context shared with Filament | `ARFrame.capturedImage`; not drawn yet, filament-kmp lacks `Texture::setExternalImage` |
+| Camera image | `ArSession.createEngine`, `CameraBackground` | external OES texture in a GL context shared with Filament | the two planes of `ARFrame.capturedImage` as Metal textures imported into Filament |
 | Errors | `ArException` | exceptions | `session(_:didFailWithError:)` |
 | Availability | `ArAvailability`, platform `checkArAvailability` | `ArCoreApk.checkAvailability` | `ARConfiguration.isSupported` |
 
