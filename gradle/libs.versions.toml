@@ -3,7 +3,7 @@ agp = "9.1.1"
 android-compileSdk = "37"
 android-minSdk = "24"
 arcore = "1.56.0"
-filament = "0.7.1"
+filament = "0.7.2"
 kotlin = "2.4.20"
 
 [libraries]
