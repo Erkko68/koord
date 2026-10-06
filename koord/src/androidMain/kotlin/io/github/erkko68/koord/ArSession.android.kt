@@ -17,8 +17,7 @@ import io.github.erkko68.filament.Filament
 import io.github.erkko68.filament.utils.Mat4
 import io.github.erkko68.koord.trackable.Anchor
 import io.github.erkko68.koord.trackable.Plane
-import com.google.ar.core.Plane as ArCorePlane
-import com.google.ar.core.TrackingState as ArCoreTrackingState
+import io.github.erkko68.koord.trackable.reportedPlanes
 
 // One being written by ARCore, plus the frames Filament's render thread may still have queued.
 private const val CAMERA_TEXTURE_COUNT = 4
@@ -110,7 +109,7 @@ actual class ArSession(context: Context) {
             // Filament samples the texture from its own context on another thread.
             GLES20.glFlush()
             // Timestamp 0 means the camera has not delivered an image yet.
-            return if (frame.timestamp == 0L) null else ArFrame(frame)
+            return if (frame.timestamp == 0L) null else ArFrame(session, frame)
         } catch (e: Exception) {
             throw e.toArException()
         }
@@ -132,10 +131,7 @@ actual class ArSession(context: Context) {
         get() = session?.allAnchors?.map(::Anchor).orEmpty()
 
     actual val planes: List<Plane>
-        get() = session?.getAllTrackables(ArCorePlane::class.java)
-            ?.filter { it.subsumedBy == null && it.trackingState != ArCoreTrackingState.STOPPED }
-            ?.map(::Plane)
-            .orEmpty()
+        get() = session?.reportedPlanes()?.map(::Plane).orEmpty()
 
     private fun applyConfig(session: Session) {
         session.configure(

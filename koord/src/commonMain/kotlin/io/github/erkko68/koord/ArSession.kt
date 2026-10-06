@@ -97,6 +97,10 @@ expect class ArSession {
      * When two planes turn out to be the same surface, the platform merges
      * them and only the surviving plane stays in this list (ARCore's subsumed
      * planes are filtered out, matching ARKit, which removes them).
+     *
+     * ARCore also reports one surface as several stacked planes, and the tops
+     * of low objects as planes over the floor. A plane lying within 10 cm of a
+     * larger parallel one is left out on Android, as ARKit holds those back.
      */
     val planes: List<Plane>
 }
