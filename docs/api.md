@@ -6,10 +6,9 @@ leaves out; [platform-apis.md](platform-apis.md) is the platform inventory it
 was designed from.
 
 > [!NOTE]
-> **Android is implemented, iOS is not.** On Android the API runs on ARCore.
-> On iOS every `actual` is still a `TODO()` stub and throws
-> `NotImplementedError`. Neither platform draws the camera image yet: the API
-> tracks, but passthrough rendering does not exist.
+> **Android is implemented, iOS is not.** On Android the API runs on ARCore,
+> including drawing the camera image. On iOS every `actual` is still a `TODO()`
+> stub and throws `NotImplementedError`.
 
 ## Types
 
@@ -24,6 +23,7 @@ Everything lives under `io.github.erkko68.koord`.
 | `ArException` | root | sealed class | Platform failures. |
 | `ArAvailability` | root | enum | Whether the device can run AR. |
 | `DisplayRotation` | root | enum | Screen rotation, for `setDisplayGeometry`. |
+| `CameraBackground` | `camera` | `expect class` | Draws the camera image behind a Filament scene. |
 | `ArCamera`, `CameraIntrinsics` | `camera` | `expect class`, data class | Camera pose, matrices and intrinsics for a frame. |
 | `Anchor` | `trackable` | `expect class` | A world pose the session keeps correcting. |
 | `Plane` | `trackable` | `expect class` | A detected flat surface. |
@@ -42,7 +42,8 @@ counterparts.
   `toFloatArrayColumn()`.
 - **Screen points** are in viewport pixels, origin top-left.
 - **Frames are pulled.** Call `ArSession.update()` once per rendered frame,
-  always from the same thread, which must also be the one that calls `close()`.
+  always from the same thread, which must also be the one that calls
+  `createEngine()` and `close()`.
   It returns `null` while the session is paused and until the first frame
   exists. A frame is only valid until the next `update()`.
 - **`DisplayRotation`** has the meaning of Android's `Surface.ROTATION_*`.
@@ -119,6 +120,41 @@ session.close()
 
 [samples/shared/…/App.kt](../samples/shared/src/commonMain/kotlin/io/github/erkko68/koord/sample/App.kt)
 is the same flow as a Compose screen.
+
+## Rendering with Filament
+
+Koord does not own the render loop; it gives Filament what it needs to draw an
+AR scene. Three pieces, all common code:
+
+```kotlin
+// 1. The engine must come from the session.
+val engine = session.createEngine()
+
+// 2. The camera image, as a renderable behind everything else.
+val background = CameraBackground(engine, session)
+scene.addEntity(background.entity)
+
+// 3. Once per rendered frame:
+val frame = session.update() ?: return
+background.update(frame)
+val projection = frame.camera.projectionMatrix(near, far).toFloatArrayColumn()
+filamentCamera.setCustomProjection(DoubleArray(16) { projection[it].toDouble() }, near.toDouble(), far.toDouble())
+filamentCamera.setModelMatrix(frame.camera.transform.toFloatArrayColumn())
+```
+
+- **Use `session.createEngine()`, not `Engine.create()`.** ARCore writes the
+  camera image to an OpenGL texture, so on Android the engine has to use the
+  OpenGL backend and share the session's GL context. Call it from the thread
+  that calls `update()`. The caller destroys the engine.
+- **`CameraBackground`** fills the viewport set with `setDisplayGeometry`,
+  cropping the camera image to its shape. The view does not need to be
+  transparent. Destroy it before the engine.
+- **Colours:** the camera image is passed through the inverse of Filament's
+  tone mapping, so it survives the view's post-processing roughly unchanged.
+
+The sample does this with `filament-compose`: an engine passed to
+`rememberFilamentScene`, a `FilamentEffect` for the per-frame work, and the
+view's camera reached through `rememberFilamentViewState`.
 
 ## Errors
 

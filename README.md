@@ -10,8 +10,13 @@ API uses.
 session.configure(ArConfig(planeDetection = PlaneDetection.HORIZONTAL))
 session.resume()
 
+val engine = session.createEngine()
+val background = CameraBackground(engine, session)   // the camera image, as a renderable
+scene.addEntity(background.entity)
+
 // Once per rendered frame:
 val frame = session.update() ?: return
+background.update(frame)
 if (frame.camera.trackingState == TrackingState.TRACKING) {
     val anchor = frame.hitTest(tapX, tapY).firstOrNull()?.createAnchor()
 }
@@ -29,11 +34,9 @@ Koord is in early development and has not been published yet.
 | Anchors | implemented | not yet |
 | Hit testing | implemented | not yet |
 | Light estimation | implemented | not yet |
-| Camera passthrough rendering | not yet | not yet |
+| Camera image behind a Filament scene | implemented | not yet |
 
-On iOS the API compiles but every call throws `NotImplementedError`. Without
-passthrough rendering, the sample app shows what the session reports as text
-rather than a camera view.
+On iOS the API compiles but every call throws `NotImplementedError`.
 
 ## Documentation
 
@@ -83,8 +86,8 @@ Android:
 ./gradlew :androidApp:installDebug
 ```
 
-The sample asks for the camera permission, then shows the tracking state and
-the number of detected planes. Tap a detected surface to place an anchor.
+The sample asks for the camera permission, then shows the camera with the
+tracking state on top. Tap a detected surface to place a cube on it.
 
 iOS: Gradle builds the Kotlin framework, Xcode builds and launches the app.
 Open [samples/iosApp/iosApp.xcodeproj](samples/iosApp/iosApp.xcodeproj), set

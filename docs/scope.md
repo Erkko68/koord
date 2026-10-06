@@ -20,6 +20,7 @@ Decided on 2026-10-05.
 | Planes | `Plane`, `ArSession.planes` | `Plane` | `ARPlaneAnchor` |
 | Hit testing | `ArFrame.hitTest` (screen point or `Ray`), `HitResult` | `Frame.hitTest` | `ARRaycastQuery`, `ARSession.raycast` |
 | Light estimate | `LightEstimate`: intensity, colour | `LightEstimate` pixel intensity, colour correction | `ARLightEstimate` ambient intensity, colour temperature |
+| Camera image | `ArSession.createEngine`, `CameraBackground` | external OES texture in a GL context shared with Filament | not implemented yet |
 | Errors | `ArException` | exceptions | `session(_:didFailWithError:)` |
 | Availability | `ArAvailability`, platform `checkArAvailability` | `ArCoreApk.checkAvailability` | `ARConfiguration.isSupported` |
 
@@ -34,6 +35,7 @@ Decided on 2026-10-05.
 | Hit targets | Detected planes only, inside their polygon | ARKit's estimated planes and ARCore's instant placement, point and depth hits have no counterpart on the other side. |
 | Merged planes | Hidden from `ArSession.planes` | ARKit removes them; ARCore keeps them with `getSubsumedBy` set. |
 | Light | Normalised intensity and an RGB tint only | These are the only values both platforms report during world tracking. |
+| Camera image | Koord draws it; the app does not get the texture | Android gives an OES texture tied to a GL context, iOS a YCbCr pixel buffer. A renderable hides both. The price is that the Filament engine must be created by the session. |
 | Installing ARCore | Reported as `ArAvailability.NEEDS_INSTALL`; the app triggers it | It needs an `Activity` and has no iOS counterpart. |
 
 ## Left out
@@ -42,8 +44,8 @@ Decided on 2026-10-05.
 
 | Feature | Why it waits |
 | :--- | :--- |
-| Camera image and image-to-screen transform | Android gives an OES texture, iOS a YCbCr pixel buffer. Expected to become an internal passthrough renderer rather than public API. |
-| Depth and occlusion | Only useful once passthrough renders. Also LiDAR-only on iOS. |
+| Depth and occlusion | Needs the camera image drawn on both platforms first. Also LiDAR-only on iOS. |
+| Raw camera image and image-to-screen transform | `CameraBackground` covers drawing it. Direct access to the pixels has no shared shape: an OES texture on Android, a YCbCr pixel buffer on iOS. |
 
 ### Common on both platforms, planned for later
 
