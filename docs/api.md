@@ -6,9 +6,10 @@ leaves out; [platform-apis.md](platform-apis.md) is the platform inventory it
 was designed from.
 
 > [!NOTE]
-> **Android is implemented, iOS is not.** On Android the API runs on ARCore,
-> including drawing the camera image. On iOS every `actual` is still a `TODO()`
-> stub and throws `NotImplementedError`.
+> **Both platforms are implemented, with one gap.** On Android the API runs on
+> ARCore, including drawing the camera image. On iOS it runs on ARKit, but
+> `CameraBackground` does not draw the camera image yet. The iOS side compiles
+> and has not been run on a device.
 
 ## Types
 
@@ -83,6 +84,16 @@ app must hold the runtime permission before calling `resume()`:
 ```
 
 `pause()` the session when the app leaves the foreground; it holds the camera.
+
+## iOS setup
+
+The app's `Info.plist` needs `NSCameraUsageDescription`; ARKit asks for the
+permission itself the first time the session runs. Koord needs iOS 16 or
+later, for the plane extent ARKit reports since then.
+
+A denied permission is not reported by `resume()`: ARKit reports it through
+its delegate, so it is thrown by the next `update()`, like every other ARKit
+failure.
 
 ## First use
 
@@ -187,3 +198,7 @@ delegate, so on iOS a failure surfaces on the next `update()`.
   anchors individually, so on iOS it follows the camera's state.
 - Some `TrackingFailureReason` values are only reported by one platform; the
   KDoc on each value says which.
+- `Plane.trackingState` is never `LIMITED` on iOS: ARKit removes a plane it
+  stops tracking instead of pausing it.
+- A denied camera permission is thrown by `resume()` on Android and by the next
+  `update()` on iOS.

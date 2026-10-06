@@ -72,6 +72,7 @@ expect class ArSession {
      * created here can draw the camera image through
      * [io.github.erkko68.koord.camera.CameraBackground]: on Android it uses
      * the OpenGL backend and shares the GL context ARCore writes the image in.
+     * On iOS it is a Metal engine with nothing special about it.
      *
      * Call it from the thread that calls [update]. The caller owns the engine
      * and destroys it with `Engine.destroy`.

@@ -3,18 +3,9 @@ package io.github.erkko68.koord
 import com.google.ar.core.Pose
 import com.google.ar.core.exceptions.CameraNotAvailableException
 import com.google.ar.core.exceptions.UnavailableException
-import io.github.erkko68.filament.utils.Float4
 import io.github.erkko68.filament.utils.Mat4
 import com.google.ar.core.TrackingFailureReason as ArCoreFailureReason
 import com.google.ar.core.TrackingState as ArCoreTrackingState
-
-/** Reads a 16-element column-major array, the layout ARCore writes. */
-internal fun FloatArray.toMat4() = Mat4(
-    Float4(this[0], this[1], this[2], this[3]),
-    Float4(this[4], this[5], this[6], this[7]),
-    Float4(this[8], this[9], this[10], this[11]),
-    Float4(this[12], this[13], this[14], this[15]),
-)
 
 internal fun Pose.toMat4(): Mat4 = FloatArray(16).also { toMatrix(it, 0) }.toMat4()
 

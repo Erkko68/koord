@@ -1,12 +1,18 @@
 package io.github.erkko68.koord.hit
 
 import io.github.erkko68.filament.utils.Mat4
+import io.github.erkko68.koord.ArSession
 import io.github.erkko68.koord.trackable.Anchor
 import io.github.erkko68.koord.trackable.Plane
+import platform.ARKit.ARPlaneAnchor
 
-actual class HitResult internal constructor() {
-    actual val transform: Mat4 get() = TODO("Not yet implemented")
-    actual val distance: Float get() = TODO("Not yet implemented")
-    actual val plane: Plane get() = TODO("Not yet implemented")
-    actual fun createAnchor(): Anchor = TODO("Not yet implemented")
+actual class HitResult internal constructor(
+    private val session: ArSession,
+    actual val transform: Mat4,
+    actual val distance: Float,
+    private val planeAnchor: ARPlaneAnchor,
+) {
+    actual val plane: Plane get() = Plane(session, planeAnchor)
+
+    actual fun createAnchor(): Anchor = session.createAnchor(transform)
 }
