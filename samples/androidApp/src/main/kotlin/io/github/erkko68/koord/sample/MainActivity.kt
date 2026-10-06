@@ -9,6 +9,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import io.github.erkko68.koord.ArSession
+import io.github.erkko68.koord.DisplayRotation
 
 class MainActivity : ComponentActivity() {
     private lateinit var session: ArSession
@@ -34,7 +35,11 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun showApp() = setContent { App(session) }
+    @Suppress("DEPRECATION") // Activity.display needs API 30.
+    private fun showApp() = setContent {
+        // DisplayRotation is declared in the order of Surface.ROTATION_0..270.
+        App(session) { DisplayRotation.entries[windowManager.defaultDisplay.rotation] }
+    }
 
     override fun onDestroy() {
         session.close()

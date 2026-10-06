@@ -12,5 +12,6 @@ filament = { module = "io.github.erkko68.filament:filament", version.ref = "fila
 filament-utils = { module = "io.github.erkko68.filament:filament-utils", version.ref = "filament" }
 
 # build-logic
+filamat-jvm = { module = "io.github.erkko68.filament:filamat-jvm", version.ref = "filament" }
 android-gradlePlugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
 kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }

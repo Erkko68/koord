@@ -33,6 +33,8 @@ cd samples
 ```
 
 `samples/` needs `ANDROID_HOME` or its own `local.properties` with `sdk.dir`.
+On Linux the build also needs `libc++-dev`, `libc++abi-dev` and `libgl-dev`,
+for the material compiler it runs.
 
 AR only runs on real devices, not on the emulator or the simulator. A green
 build does not show that AR code works: say plainly what was built and what
@@ -60,10 +62,10 @@ Neither runs the Xcode build of `samples/iosApp`.
 - **Keep it small.** No abstractions, options or dependencies that nothing
   uses yet. Versions go in `gradle/libs.versions.toml` (and
   `samples/gradle/libs.versions.toml` for the samples).
-- **Materials** live as `.mat` sources in `koord/materials/` and are embedded
-  as generated Kotlin. After editing one, regenerate with
-  `koord/materials/embed.sh /path/to/matc`, using the `matc` of the Filament
-  release that filament-kmp bundles. Never edit the generated file.
+- **Materials** are compiled at build time by a Gradle task in `build-logic/`
+  that runs filamat, and embedded as generated Kotlin under `koord/build/`.
+  The material is defined in that task
+  (`GenerateCameraBackgroundMaterial.kt`); nothing compiled is committed.
 - **Keep the docs true.** An API change updates `docs/api.md`; a scope decision
   updates `docs/scope.md`.
 
