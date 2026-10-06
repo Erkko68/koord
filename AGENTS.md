@@ -65,7 +65,13 @@ Neither runs the Xcode build of `samples/iosApp`.
 - **Materials** are compiled at build time by a Gradle task in `build-logic/`
   that runs filamat, and embedded as generated Kotlin under `koord/build/`.
   The material is defined in that task
-  (`GenerateCameraBackgroundMaterial.kt`); nothing compiled is committed.
+  (`GenerateCameraBackgroundMaterial.kt`), once per platform; nothing compiled
+  is committed.
+- **Never hold an `ARFrame` in Kotlin.** Kotlin/Native keeps Objective-C
+  objects alive until its garbage collector runs, and ARKit stops delivering
+  camera images when too many frames are held. Read a frame through the
+  helpers in `koord/src/nativeInterop/cinterop/arkit.def`, which take the
+  pointer `ArSession` retains for exactly one frame.
 - **Keep the docs true.** An API change updates `docs/api.md`; a scope decision
   updates `docs/scope.md`.
 
