@@ -33,6 +33,8 @@ cd samples
 ```
 
 `samples/` needs `ANDROID_HOME` or its own `local.properties` with `sdk.dir`.
+On Linux the build also needs `libc++-dev`, `libc++abi-dev` and `libgl-dev`,
+for the material compiler it runs.
 
 AR only runs on real devices, not on the emulator or the simulator. A green
 build does not show that AR code works: say plainly what was built and what
