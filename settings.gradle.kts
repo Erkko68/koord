@@ -1,4 +1,6 @@
-rootProject.name = "koord"
+// Not "koord": with the same group and name as the :koord module, Gradle takes a dependency
+// on that module for the root project itself and drops it, which left it out of the API reference.
+rootProject.name = "koord-root"
 
 pluginManagement {
     // Convention plugins live in the build-logic included build (not buildSrc), so
