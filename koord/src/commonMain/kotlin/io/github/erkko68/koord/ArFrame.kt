@@ -2,6 +2,7 @@ package io.github.erkko68.koord
 
 import io.github.erkko68.koord.math.Ray
 import io.github.erkko68.koord.camera.ArCamera
+import io.github.erkko68.koord.depth.DepthImage
 import io.github.erkko68.koord.hit.HitResult
 import io.github.erkko68.koord.hit.HitTarget
 import io.github.erkko68.koord.light.LightEstimate
@@ -46,6 +47,27 @@ expect class ArFrame {
      * `cameraTextureName` on Android, `cameraImage` on iOS.
      */
     val cameraImageUv: FloatArray
+
+    /**
+     * The distance from the camera to the real scene at each pixel, or `null`
+     * if [ArConfig.depth] is off, the device cannot measure depth, or the
+     * session has no estimate for this frame yet. ARCore's
+     * `Frame.acquireDepthImage16Bits`, ARKit's `ARFrame.smoothedSceneDepth`;
+     * both are smoothed over the last frames.
+     *
+     * Reading it copies the image, so read it once per frame.
+     *
+     * **On iOS this needs a LiDAR scanner**, which only the Pro devices have:
+     * iPhone 12 Pro and later Pro models, and iPad Pro from 2020 on. On every
+     * other iPhone and iPad it is always `null`, since ARKit has no depth
+     * without the scanner. The scanner measures up to about 5 m.
+     *
+     * On Android, ARCore estimates depth from the camera's motion on most
+     * devices it supports, with no depth sensor needed. The first image only
+     * comes after the device has moved a little, it is most accurate between
+     * 0.5 m and 5 m, and it is wrong on moving objects.
+     */
+    val depthImage: DepthImage?
 
     /**
      * Casts a ray from a point on screen into the tracked world.

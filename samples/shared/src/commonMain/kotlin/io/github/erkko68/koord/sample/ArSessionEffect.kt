@@ -103,7 +103,9 @@ fun FilamentSceneScope.ArSessionEffect(
             // seen, so both are read again every frame.
             state.anchors = session.anchors.map { it.transform.toFilament() }
             state.planes = session.planes.mapNotNull { it.toMesh() }
-            state.status = frame.camera.status(state.planes.size, state.anchors.size)
+            state.status = frame.camera.status(state.planes.size, state.anchors.size) +
+                // Null on a device without depth, which on iOS is one without LiDAR.
+                frame.depthImage?.let { "\n${(it.metres[it.height / 2 * it.width + it.width / 2] * 100).toInt()} cm to the centre" }.orEmpty()
         }
 
         onDispose {

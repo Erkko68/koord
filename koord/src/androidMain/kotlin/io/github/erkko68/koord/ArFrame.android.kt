@@ -1,15 +1,19 @@
 package io.github.erkko68.koord
 
+import com.google.ar.core.Config
 import com.google.ar.core.Coordinates2d
 import com.google.ar.core.Frame
 import com.google.ar.core.Session
+import com.google.ar.core.exceptions.NotYetAvailableException
 import io.github.erkko68.koord.math.Float3
 import io.github.erkko68.koord.math.Ray
 import io.github.erkko68.koord.camera.ArCamera
+import io.github.erkko68.koord.depth.DepthImage
 import io.github.erkko68.koord.hit.HitResult
 import io.github.erkko68.koord.hit.HitTarget
 import io.github.erkko68.koord.light.LightEstimate
 import io.github.erkko68.koord.trackable.reportedPlanes
+import java.nio.ByteOrder
 import com.google.ar.core.HitResult as ArCoreHitResult
 import com.google.ar.core.LightEstimate as ArCoreLightEstimate
 import com.google.ar.core.Plane as ArCorePlane
@@ -37,6 +41,29 @@ actual class ArFrame internal constructor(private val session: Session, private 
                 Coordinates2d.OPENGL_NORMALIZED_DEVICE_COORDINATES, VIEWPORT_CORNERS,
                 Coordinates2d.TEXTURE_NORMALIZED, it,
             )
+        }
+
+    actual val depthImage: DepthImage?
+        get() {
+            // Asking for the image with depth off throws.
+            if (session.config.depthMode == Config.DepthMode.DISABLED) return null
+            return try {
+                // DEPTH16: one unsigned 16-bit value per pixel, in millimetres.
+                frame.acquireDepthImage16Bits().use { image ->
+                    val plane = image.planes[0]
+                    val millimetres = plane.buffer.order(ByteOrder.nativeOrder()).asShortBuffer()
+                    val rowLength = plane.rowStride / 2
+                    val width = image.width
+                    DepthImage(
+                        width, image.height,
+                        FloatArray(width * image.height) {
+                            (millimetres[it / width * rowLength + it % width].toInt() and 0xFFFF) / 1000f
+                        },
+                    )
+                }
+            } catch (_: NotYetAvailableException) {
+                null
+            }
         }
 
     actual val camera: ArCamera get() = ArCamera(frame.camera)

@@ -13,6 +13,7 @@ import kotlinx.cinterop.ExperimentalForeignApi
 import platform.CoreFoundation.CFRelease
 import platform.CoreGraphics.CGSizeMake
 import platform.ARKit.ARAnchor
+import platform.ARKit.ARFrameSemanticSmoothedSceneDepth
 import platform.ARKit.ARPlaneAnchor
 import platform.ARKit.ARPlaneDetectionHorizontal
 import platform.ARKit.ARPlaneDetectionNone
@@ -163,6 +164,10 @@ actual class ArSession {
                 }
                 lightEstimationEnabled = config.lightEstimation
                 autoFocusEnabled = config.autoFocus
+                // Only devices with a LiDAR scanner have depth, and asking for it on another one throws.
+                if (config.depth && ARWorldTrackingConfiguration.supportsFrameSemantics(ARFrameSemanticSmoothedSceneDepth)) {
+                    frameSemantics = ARFrameSemanticSmoothedSceneDepth
+                }
             },
         )
     }

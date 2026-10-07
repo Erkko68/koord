@@ -37,6 +37,7 @@ Everything in `koord` lives under `io.github.erkko68.koord`.
 | `HitResult` | `hit` | `expect class` | One intersection of a hit-test ray with a plane. |
 | `HitTarget` | `hit` | enum | How much of a plane a hit test can hit: its polygon, or the plane extended without limit. |
 | `LightEstimate` | `light` | data class | Ambient light of the real scene. |
+| `DepthImage` | `depth` | class | The distance from the camera to the real scene, per pixel. |
 | `Mat4`, `Float3`, `Float2`, `Ray` | `math` | classes | The values the API passes around. |
 
 The `expect` classes wrap a platform object; the rest is plain common code.
@@ -174,6 +175,33 @@ What is common is where the viewport falls in that image:
 corners (bottom-left, bottom-right, top-left), with the display rotation and
 the crop to the viewport's shape applied.
 
+## Depth
+
+Depth is off by default. Turn it on with `ArConfig(depth = true)` and read
+`ArFrame.depthImage` once per frame:
+
+```kotlin
+val depth = frame.depthImage ?: return
+val centre = depth.metres[depth.height / 2 * depth.width + depth.width / 2]
+```
+
+A `DepthImage` is a small image (around 160×90 on ARCore, 256×192 on ARKit) of
+distances in metres, measured along the camera's viewing direction. It covers
+the same view as the camera image in the same orientation, so
+`ArFrame.cameraImageUv` says where the viewport falls in it too.
+
+`depthImage` is `null` when the device cannot measure depth, and the two
+platforms differ a lot in which devices can:
+
+- **iOS needs a LiDAR scanner**: iPhone 12 Pro and later Pro models, and iPad
+  Pro from 2020 on. Every other iPhone and iPad never has depth. The scanner
+  measures up to about 5 m.
+- **Android** estimates depth from the camera's motion, on most devices ARCore
+  supports and without a depth sensor. The first image comes only after the
+  device has moved a little, and moving objects are measured wrongly.
+
+Koord does not draw with it: occlusion is not in `koord-filament` yet.
+
 ## Rendering with Filament
 
 Add `koord-filament`. Koord does not own the render loop; the module gives
@@ -243,6 +271,9 @@ delegate, so on iOS a failure surfaces on the next `update()`.
 ## Behaviour that still differs
 
 - `Plane.polygon` is convex on Android and may be concave on iOS.
+- `ArFrame.depthImage` exists on most ARCore devices but only on iOS devices
+  with a LiDAR scanner, and its size differs. A pixel without an estimate is
+  `0` on Android; ARKit fills every pixel.
 - On Android a hit test drops hits on the back of a plane, as ARCore's own
   sample does. Whether ARKit reports such hits has not been checked.
 - `Anchor.trackingState` is per anchor on Android. ARKit does not track plain

@@ -156,6 +156,10 @@ actual class ArSession(context: Context) {
                     if (config.lightEstimation) Config.LightEstimationMode.AMBIENT_INTENSITY
                     else Config.LightEstimationMode.DISABLED
                 focusMode = if (config.autoFocus) Config.FocusMode.AUTO else Config.FocusMode.FIXED
+                // Configuring depth on a device without it throws.
+                depthMode =
+                    if (config.depth && session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)) Config.DepthMode.AUTOMATIC
+                    else Config.DepthMode.DISABLED
                 // update() is a pull from the render loop and must not wait for the camera.
                 updateMode = Config.UpdateMode.LATEST_CAMERA_IMAGE
             },

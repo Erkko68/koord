@@ -8,10 +8,12 @@ import io.github.erkko68.koord.math.colorTemperatureToRgb
 import io.github.erkko68.koord.math.length
 import io.github.erkko68.koord.math.minus
 import io.github.erkko68.koord.camera.ArCamera
+import io.github.erkko68.koord.depth.DepthImage
 import io.github.erkko68.koord.hit.HitResult
 import io.github.erkko68.koord.hit.HitTarget
 import io.github.erkko68.koord.interop.koord_frame_camera
 import io.github.erkko68.koord.interop.koord_frame_camera_image
+import io.github.erkko68.koord.interop.koord_frame_depth_map
 import io.github.erkko68.koord.interop.koord_frame_display_transform
 import io.github.erkko68.koord.interop.koord_frame_light_estimate
 import io.github.erkko68.koord.interop.koord_frame_raycast_query
@@ -19,6 +21,9 @@ import io.github.erkko68.koord.interop.koord_frame_timestamp
 import io.github.erkko68.koord.light.LightEstimate
 import kotlinx.cinterop.COpaquePointer
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.FloatVar
+import kotlinx.cinterop.get
+import kotlinx.cinterop.reinterpret
 import kotlinx.cinterop.useContents
 import kotlinx.cinterop.vectorOf
 import platform.ARKit.ARPlaneAnchor
@@ -29,7 +34,14 @@ import platform.ARKit.ARRaycastTargetAlignment
 import platform.CoreGraphics.CGAffineTransformInvert
 import platform.CoreGraphics.CGPointApplyAffineTransform
 import platform.CoreGraphics.CGPointMake
+import platform.CoreVideo.CVPixelBufferGetBaseAddress
+import platform.CoreVideo.CVPixelBufferGetBytesPerRow
+import platform.CoreVideo.CVPixelBufferGetHeight
+import platform.CoreVideo.CVPixelBufferGetWidth
+import platform.CoreVideo.CVPixelBufferLockBaseAddress
 import platform.CoreVideo.CVPixelBufferRef
+import platform.CoreVideo.CVPixelBufferUnlockBaseAddress
+import platform.CoreVideo.kCVPixelBufferLock_ReadOnly
 
 // ARKit's ambient intensity for a neutrally lit scene, in lumens.
 private const val NEUTRAL_LUMENS = 1000.0
@@ -71,6 +83,22 @@ actual class ArFrame internal constructor(private val session: ArSession, privat
      * `ArFrame.cameraTextureName`.
      */
     val cameraImage: CVPixelBufferRef get() = koord_frame_camera_image(handle)!!
+
+    actual val depthImage: DepthImage?
+        get() {
+            val map = koord_frame_depth_map(handle) ?: return null
+            CVPixelBufferLockBaseAddress(map, kCVPixelBufferLock_ReadOnly)
+            try {
+                // One 32-bit float per pixel, in metres.
+                val width = CVPixelBufferGetWidth(map).toInt()
+                val height = CVPixelBufferGetHeight(map).toInt()
+                val rowLength = CVPixelBufferGetBytesPerRow(map).toInt() / 4
+                val metres = CVPixelBufferGetBaseAddress(map)!!.reinterpret<FloatVar>()
+                return DepthImage(width, height, FloatArray(width * height) { metres[it / width * rowLength + it % width] })
+            } finally {
+                CVPixelBufferUnlockBaseAddress(map, kCVPixelBufferLock_ReadOnly)
+            }
+        }
 
     actual val cameraImageUv: FloatArray
         get() {

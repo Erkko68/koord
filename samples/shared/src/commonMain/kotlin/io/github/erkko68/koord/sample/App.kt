@@ -49,7 +49,7 @@ fun App(session: ArSession, displayRotation: () -> DisplayRotation = { DisplayRo
     // The session holds the camera, so it only runs while the app is in front.
     LifecycleResumeEffect(session) {
         try {
-            session.configure(ArConfig())
+            session.configure(ArConfig(depth = true))
             session.resume()
         } catch (e: ArException) {
             state.status = "AR failed to start: ${e.message}"

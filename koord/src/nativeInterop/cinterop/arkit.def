@@ -51,3 +51,8 @@ static inline ARRaycastQuery* koord_frame_raycast_query(void* frame, CGPoint ima
 static inline CVPixelBufferRef koord_frame_camera_image(void* frame) {
     return ((__bridge ARFrame*)frame).capturedImage;
 }
+
+/** The smoothed depth map, owned by the frame: 32-bit floats in metres. NULL without scene depth. */
+static inline CVPixelBufferRef koord_frame_depth_map(void* frame) {
+    return ((__bridge ARFrame*)frame).smoothedSceneDepth.depthMap;
+}
