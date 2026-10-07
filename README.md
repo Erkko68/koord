@@ -35,6 +35,7 @@ Koord is in early development and has not been published yet.
 | Anchors | implemented | implemented |
 | Hit testing, inside a plane or on its extension | implemented | implemented |
 | Light estimation | implemented | implemented |
+| Depth image | implemented | implemented, devices with LiDAR only |
 | Camera image behind a Filament scene (`koord-filament`) | implemented | implemented |
 
 The iOS side is new and not yet confirmed working on a device.
